@@ -1,0 +1,4 @@
+keras==2.2.2
+munch==2.3.2
+PyYAML==3.13
+python_speech_features==0.6

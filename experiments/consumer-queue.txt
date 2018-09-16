@@ -1,0 +1,5 @@
+
+experiments/configuration.yaml|model.parameters.rnn_sizes=[128,256,512,1024,1024]|exp_dir="experiments/batch normalized/FC2x128-64 RNN128-256-512-2x1024"
+experiments/configuration.yaml|model.parameters.rnn_sizes=[128,256,512,512,512]|exp_dir="experiments/batch normalized/FC2x128-64 RNN128-256-3x512"
+experiments/configuration.yaml|model.parameters.rnn_sizes=[128,256,512,1024,2048]|exp_dir="experiments/batch normalized/FC2x128-64 RNN128-256-512-1024-2048"
+experiments/configuration.yaml|model.parameters.rnn_sizes=[128,256,512,1024]|exp_dir="experiments/batch normalized/FC2x128-64 RNN128-256-512-1024"

@@ -1,0 +1,92 @@
+
+# In the experiment directory model checkpoints and tensorboard files are saved.
+
+exp_dir: experiments/test
+
+
+# Set up CSV reading parameters and specify how generator produces batches.
+# New feature extractor easily can be added in `audio.get_features`.
+
+dataset:
+  alphabet_path: data/alphabet.txt
+  train_csv_path: data/clarin/train.csv
+  dev_csv_path: data/clarin/dev.csv
+
+  parameters:
+    batch_size: 30
+    sort_source: True
+    max_length: False
+    shuffle_after_epoch: 1
+
+    cache: True
+    cache_dir: data/clarin/.cache
+    cache_files_count: 5
+    cache_verbose: True
+
+
+# Custom architecture can be added to folder `architecture`. Here you call the
+# name and pass (or overwrite default) parameters.
+# Use checkpoint to load model weights, e.g.:
+# checkpoint:
+#   use: True
+#   file_path: /path/to/file/weights.hdf5
+
+model:
+  checkpoint:
+    use: False
+  parameters:
+    fc_sizes: [128, 128, 64]
+    rnn_sizes: [512, 512, 512]
+    output_dim: 36
+    random_seed: 4567
+    stddev: 0.046875
+
+
+# The available optimizers are specified in: `deepspeech.__get_optimizer` and
+# come from `keras.optimizers` module. You can use keras documentation to get
+# more information and overwrite default parameters (use the same names).
+
+optimizer:
+  name: adam
+  parameters:
+    lr: 0.001
+    beta_1: 0.9
+    beta_2: 0.999
+    epsilon: 0.00000001
+
+
+# Define callbacks to get a view on internal states and statistics of the model
+# during training.
+
+callbacks:
+- name: TerminateOnNaN
+
+- name: CustomModelCheckpoint
+
+- name: CustomTensorBoard
+
+- name: LearningRateScheduler
+  parameters:
+    # Around 8% at epoch 25
+    k: 0.1
+    verbose: 1
+
+- name: CustomEarlyStopping
+  parameters:
+    mini_targets:
+      5: 200
+      10: 100
+    monitor: val_loss
+    patience: 3
+
+
+# Choose `model.fit_generator` parameters. This allows you to do features
+# extraction on CPU in parallel to training your model on GPU's.
+
+fit_generator:
+  parameters:
+    epochs: 25
+    use_multiprocessing: False
+#    use_multiprocessing: True
+#    max_queue_size: 10
+#    workers: 5
