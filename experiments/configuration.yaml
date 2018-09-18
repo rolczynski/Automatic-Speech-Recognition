@@ -32,6 +32,7 @@ dataset:
 #   file_path: /path/to/file/weights.hdf5
 
 model:
+  name: deepspeech
   checkpoint:
     use: False
   parameters:
