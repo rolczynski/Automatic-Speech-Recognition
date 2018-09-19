@@ -106,7 +106,7 @@ class DeepSpeech:
     def __set_model(self):
         """ Define model base on the experiment configuration. """
         config_model = self.configuration.model
-        self.model = model.get_model(**config_model.parameters)
+        self.model = model.get_model(config_model.name, **config_model.parameters)
         if config_model.checkpoint.use:
             self.model.load_weights(config_model.checkpoint.file_path)
 
