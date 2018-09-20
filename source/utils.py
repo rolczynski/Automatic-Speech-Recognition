@@ -64,7 +64,7 @@ def wer(r, h):
 
 def cache_features_to_files(name, dir, cache_files_count):
     """ """
-    cache_dir = os.path.join(dir, '.cache', name)
+    cache_dir = os.path.join(dir, name)
     cache_index = os.path.join(cache_dir, '.index')
 
     def create_dir_and_cache_files():
