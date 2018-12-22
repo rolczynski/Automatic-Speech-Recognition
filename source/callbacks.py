@@ -13,7 +13,8 @@ class CustomModelCheckpoint(Callback):
         super().__init__()
         self.log_dir = log_dir
         self.best_result = np.inf
-        os.makedirs(log_dir)
+        if not os.path.isdir(log_dir):
+            os.makedirs(log_dir)
 
 
     def __save_model(self, epoch, logs={}):
@@ -22,7 +23,7 @@ class CustomModelCheckpoint(Callback):
         name = f'weights.{epoch + 1:02d}-{val_loss:.2f}.hdf5'
         file_path = os.path.join(self.log_dir, name)
         self.model.template_model.save_weights(file_path, overwrite=True)
-        if self.best_result > val_loss:
+        if val_loss < self.best_result:
             self.best_result = val_loss
             self.model.history.best_weights_path = file_path
 
