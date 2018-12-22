@@ -1,5 +1,4 @@
 import yaml
-from munch import munchify
 
 
 class Configuration:
@@ -12,16 +11,19 @@ class Configuration:
         """ All parameters saved in .yaml file convert to dot accessible """
         self._file_path = file_path
         self._data = self.__read_yaml_file()
-        self.__set_dot_accessible_attributes()
-
-
-    def __set_dot_accessible_attributes(self):
-        """ Set all parameters saved in .yaml file as object attributes """
-        for name, value in munchify(self._data).items():
-            setattr(self, name, value)
+        self.__check_file(required_keys=['alphabet', 'model', 'callbacks', 'optimizer'])
+        self.alphabet = self._data.get('alphabet')
+        self.model = self._data.get('model')
+        self.callbacks = self._data.get('callbacks')
+        self.optimizer = self._data.get('optimizer')
 
 
     def __read_yaml_file(self):
         """ Read YAML configuration file """
         with open(self._file_path, 'r') as stream:
             return yaml.load(stream)
+
+
+    def __check_file(self, required_keys):
+        if not all(key in self._data for key in required_keys):
+            raise KeyError(f'Configuration file should have all required keys: {required_keys}')
