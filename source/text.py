@@ -3,7 +3,7 @@ import numpy as np
 
 class Alphabet:
     """
-    Read alphabet.txt, which is the list of valid characters. here are two
+    Read alphabet.txt, which is the list of valid characters. Alphabet has two
     special characters:
       - space: on the beginning
       - blank: default added as the last char
@@ -20,6 +20,21 @@ class Alphabet:
         self.__process_alphabet_file()
 
 
+    def __contains__(self, char):
+        """ Check if char is in the Alphabet. """
+        return char in self._str_to_label
+
+
+    def string_from_label(self, label):
+        """ Convert label to string. """
+        return self._label_to_str[label]
+
+
+    def label_from_string(self, string):
+        """ Convert string to label. """
+        return self._str_to_label[string]
+
+
     def __process_alphabet_file(self):
         with open(self._file_path) as file:
             for line in file:
@@ -31,15 +46,7 @@ class Alphabet:
                 self._str_to_label[char] = self.size
                 self.size += 1
             # Blank token is added on the end
-            self.blank_token = self.size
-
-
-    def string_from_label(self, label):
-        return self._label_to_str[label]
-
-
-    def label_from_string(self, string):
-        return self._str_to_label[string]
+            self.blank_token = self.size - 1
 
 
 def get_batch_labels(transcripts, alphabet):
@@ -58,7 +65,7 @@ def get_batch_labels(transcripts, alphabet):
 
 
 def get_batch_transcripts(sequences, alphabet):
-    """ Convert label sequences to transcripts. The `-1` means the blank tag """
+    """ Convert label sequences to transcripts. The `-1` also means the blank tag """
     return [''.join(alphabet.string_from_label(char_label) for char_label in sequence
                     if char_label not in (-1, alphabet.blank_token))
             for sequence in sequences]
