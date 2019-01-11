@@ -17,7 +17,7 @@ class Alphabet:
         self._file_path = file_path
         self._label_to_str = []
         self._str_to_label = {}
-        self.__process_alphabet_file()
+        self._process_alphabet_file()
 
 
     def __contains__(self, char):
@@ -35,7 +35,7 @@ class Alphabet:
         return self._str_to_label[string]
 
 
-    def __process_alphabet_file(self):
+    def _process_alphabet_file(self):
         with open(self._file_path) as file:
             for line in file:
                 if line.startswith('#'):
