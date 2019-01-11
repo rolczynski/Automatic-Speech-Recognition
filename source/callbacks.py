@@ -13,11 +13,17 @@ class CustomModelCheckpoint(Callback):
         super().__init__()
         self.log_dir = log_dir
         self.best_result = np.inf
-        if not os.path.isdir(log_dir):
-            os.makedirs(log_dir)
 
 
-    def __save_model(self, epoch, logs={}):
+    def _create_directory(self, _):
+        """ Create the directory where the checkpoints are saved. """
+        if not os.path.isdir(self.log_dir):
+            os.makedirs(self.log_dir)
+
+    on_train_begin = _create_directory
+
+
+    def _save_model(self, epoch, logs={}):
         """ Save model with weights of the single-gpu template model. """
         val_loss = logs.get('val_loss')
         name = f'weights.{epoch + 1:02d}-{val_loss:.2f}.hdf5'
@@ -27,7 +33,7 @@ class CustomModelCheckpoint(Callback):
             self.best_result = val_loss
             self.model.history.best_weights_path = file_path
 
-    on_epoch_end = __save_model
+    on_epoch_end = _save_model
 
 
 class CustomTensorBoard(TensorBoard):
@@ -35,11 +41,11 @@ class CustomTensorBoard(TensorBoard):
     disable. The generator is required and not supported with fit_generator. """
 
     def __init__(self, log_dir):
-        super(CustomTensorBoard, self).__init__(log_dir)
+        super().__init__(log_dir)
         self.processed_batches = 0
 
 
-    def __save_batch_loss(self, _, logs={}):
+    def _save_batch_loss(self, _, logs={}):
         """ Add value to the tensorboard event """
         loss = logs.get('loss')
         summary = tf.Summary()
@@ -50,7 +56,7 @@ class CustomTensorBoard(TensorBoard):
         self.writer.flush()
         self.processed_batches += 1
 
-    on_batch_end = __save_batch_loss
+    on_batch_end = _save_batch_loss
 
 
 class CustomEarlyStopping(EarlyStopping):
