@@ -1,28 +1,27 @@
 import numpy as np
 import python_speech_features
 import scipy.io.wavfile as wav
-from keras.preprocessing.sequence import pad_sequences
 
 
-def get_features_mfcc(files):
-    """ Extract MFCC features """
-    x_val = [get_sample_length(file) for file in files]
-    max_val = max(x_val)
-    X = np.array([make_mfcc(file, padlen=max_val) for file in files])
+def get_features_mfcc(files: list):
+    """ Extract MFCC features from the files list. """
+    mfccs = [make_mfcc(file) for file in files]
+    X = align(mfccs)
     return X
 
 
-def get_sample_length(file_path):
-    """ Read .wav file and return the sample length """
+def make_mfcc(file_path: str):
+    """ Use `python_speech_features` lib to extract MFCC features from the audio file. """
     fs, audio = wav.read(file_path)
-    r = python_speech_features.mfcc(audio, samplerate=fs, numcep=26)
-    return r.shape[0]
+    mfcc = python_speech_features.mfcc(audio, samplerate=fs, numcep=26)
+    return mfcc
 
 
-def make_mfcc(filename, padlen):
-    """ Use `python_speech_features` lib to extract MFCC features """
-    fs, audio = wav.read(filename)
-    r = python_speech_features.mfcc(audio, samplerate=fs, numcep=26)
-    t = np.transpose(r)
-    X = pad_sequences(t, maxlen=padlen, dtype='float', padding='post', truncating='post').T
+def align(arrays: list, default=0):
+    """ Pad arrays along time dimensions. Return the single array (batch_size, time, features). """
+    max_array = max(arrays, key=len)
+    X = np.full(shape=[len(arrays), *max_array.shape], fill_value=default)
+    for index, array in enumerate(arrays):
+        time_dim, features_dim = array.shape
+        X[index, :time_dim] = array
     return X
