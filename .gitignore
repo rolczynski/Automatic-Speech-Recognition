@@ -1,27 +1,11 @@
 
 *.pyc
+*.log
 .idea
 .ipynb_checkpoints
 
-/venv/*
-/notebooks/*
-/data/*
-/experiments/*
-
-# Do not include test's files
-*test*
+# Unversioned files
+/bin
 
 # Do not include models
 *.bin
-
-# How alphabet looks like
-!alphabet.txt
-
-# Exemplary importer
-!import_clarin.py
-
-# Exemplary configuration
-!configuration.yaml
-
-# Exemplary consumer queue
-!consumer-queue.txt
