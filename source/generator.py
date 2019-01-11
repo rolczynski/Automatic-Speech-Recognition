@@ -1,117 +1,92 @@
+import h5py
 import numpy as np
 import pandas as pd
 from keras.utils import Sequence
 from source import audio, text
-from source.utils import cache_features_to_files
 
 
 class DataGenerator(Sequence):
     """
     Generates data for Keras
 
-    Every `Sequence` must implement the `__getitem__` and the `__len__`
-    methods. If you want to modify your dataset between epochs you may
-    implement `on_epoch_end`. The method `__getitem__` should return a
-    complete batch.
-
     `Sequence` are a safer way to do multiprocessing. This structure
     guarantees that the network will only train once on each sample per epoch
     which is not the case with generators.
 
-    Sequence implementation:
-    https://github.com/keras-team/keras/blob/master/keras/utils/data_utils.py
-
-    Example:
+    References:
     https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly.html
     """
-    def __init__(self, name, csv_path, alphabet, shuffle_after_epoch=1,
-                 sort_source=True, max_length=False, batch_size=30,
-                 cache=True, cache_dir=None, cache_files_count=None,
-                 cache_verbose=False):
-        self._epoch = 0
-        self._name = name
-        self._csv_path = csv_path
+    def __init__(self, source_indicators, alphabet, shuffle_after_epoch=1, batch_size=30, features_store=False):
+        self._source_indicators = source_indicators
+        self._features_store = features_store
         self._alphabet = alphabet
         self._batch_size = batch_size
-        self._sort_source = sort_source
-        self._max_length = max_length
         self._shuffle_after_epoch = shuffle_after_epoch
 
-        self._cache = cache
-        self._cache_dir = cache_dir
-        self._cache_files_count = cache_files_count
-        self._cache_verbose = cache_verbose
-
-        # Wrap method and keep all features in the cache files
-        if self._cache:
-            self.__get_batch = cache_features_to_files(
-                self._name, self._cache_dir, self._cache_files_count
-            )(self.__get_batch)
-
-        self.__set_data_from_csv()
+        self.epoch = 0
         self.indices = np.arange(len(self))
-        self.__shuffle_indices()
 
 
-    def __set_data_from_csv(self):
-        """ Process csv files: `file_name`, `size`, `transcript` """
-        data = pd.read_csv(
-            self._csv_path,
-            names=['file_name', 'size', 'transcript'],
-            sep=',',
-            encoding='utf-8',
-            header=0
-        )
+    @classmethod
+    def from_audio_files(cls, file_path, **kwargs):
+        """ Create generator from csv file. The file contains audio file paths
+        with corresponding transcriptions. """
+        source_indicators = pd.read_csv(file_path, names=['name', 'transcript'],
+                                        sep=',', encoding='utf-8', header=0)
+        return cls(source_indicators=source_indicators, **kwargs)
 
-        if self._max_length:
-            correct_records = data.transcript.map(len) <= self._max_length
-            data = data[correct_records]
 
-        if self._sort_source:
-            data.sort_values(by='size', ascending=True, inplace=True)
-
-        self._data = data
+    @classmethod
+    def from_prepared_features(cls, file_path, **kwargs):
+        """ Create generator from prepared features saved in the HDF5 format. """
+        features_store = h5py.File(file_path, mode='r')
+        source_indicators = pd.HDFStore(file_path, mode='r')['source_indicators']   # Read DataFrame via PyTables
+        return cls(source_indicators=source_indicators, features_store=features_store, **kwargs)
 
 
     def __len__(self):
-        """ Denotes the number of batches per epoch """
-        return int(np.floor(len(self._data.index) / self._batch_size))
+        """ Denotes the number of batches per epoch. """
+        return int(np.floor(len(self._source_indicators.index) / self._batch_size))
 
 
     def __getitem__(self, next_index):
-        """ Operator to get batch data - can be cached """
-        index = self.indices[next_index]
-        return self.__get_batch(index)
+        """ Operator to get the batch data. """
+        batch_index = self.indices[next_index]
+        return self._get_batch(batch_index)
 
 
-    def __get_batch(self, index):
-        """ Generate one batch of data """
+    def _get_batch(self, index):
+        """ Read (if features store exist) or generate features and labels batch. """
         start, end = index*self._batch_size, (index+1)*self._batch_size
-        batch_data = self._data[start:end]
-        return self.__generate_data(batch_data)
+        batch_indicators = self._source_indicators[start:end]
+        names, transcripts = batch_indicators.name, batch_indicators.transcript
 
-
-    def __generate_data(self, data):
-        """ Extract features from the source batch """
-        features = audio.get_features_mfcc(data.file_name)
-        labels = text.get_batch_labels(data.transcript, self._alphabet)
+        labels = text.get_batch_labels(transcripts, self._alphabet)
+        if self._features_store:
+            features = self._read_features(names)
+        else:
+            features = self._extract_features(names)
         return features, labels
 
 
+    def _read_features(self, names):
+        """ Read already prepared features from the audio store. """
+        features = [self._features_store[name][:] for name in names]
+        return audio.align(features)
+
+
+    def _extract_features(self, names):
+        """ Extract features from the audio files (mono 16kHz). """
+        return audio.get_features_mfcc(files=names)
+
+
     def on_epoch_end(self):
-        """ Invoke methods on the end of each epoch """
-        self._epoch += 1
-        self.__shuffle_indices()
-        self.__cache_summary()
+        """ Invoke methods at the end of the each epoch. """
+        self.epoch += 1
+        self._shuffle_indices()
 
 
-    def __shuffle_indices(self):
+    def _shuffle_indices(self):
         """ Set up the order of next batches """
-        if self._epoch >= self._shuffle_after_epoch:
+        if self.epoch >= self._shuffle_after_epoch:
             np.random.shuffle(self.indices)
-
-
-    def __cache_summary(self):
-        """ Summary to check the cache usage """
-        if self._cache and self._cache_verbose:
-            print('\n' + str(self.__get_batch.cache_info()))
