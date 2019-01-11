@@ -1,4 +1,0 @@
-keras==2.2.2
-munch==2.3.2
-pyyaml>=4.2b1
-python_speech_features==0.6
