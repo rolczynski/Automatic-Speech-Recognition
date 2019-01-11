@@ -12,12 +12,15 @@ dependencies:
   - cudatoolkit=9.2=0
   - cudnn=7.2.1=cuda9.2_0
   - cupti=9.2.148=0
+  - dill=0.2.8.2=py36_0
   - gast=0.2.0=py36_0
   - grpcio=1.16.1=py36hf8bcb03_1
   - h5py=2.9.0=py36h7918eee_0
   - hdf5=1.10.4=hb1b8bf9_0
   - intel-openmp=2019.1=144
+  - keras=2.2.4=0
   - keras-applications=1.0.6=py36_0
+  - keras-base=2.2.4=py36_0
   - keras-preprocessing=1.0.5=py36_0
   - libedit=3.1.20170329=h6b74fdf_2
   - libffi=3.2.1=hd88cf55_4
@@ -39,6 +42,7 @@ dependencies:
   - python=3.6.8=h0371630_0
   - python-dateutil=2.7.5=py36_0
   - pytz=2018.7=py36_0
+  - pyyaml=3.13=py36h14c3975_0
   - readline=7.0=h7b6447c_5
   - scipy=1.1.0=py36h7c811a0_2
   - setuptools=40.6.3=py36_0
@@ -53,4 +57,7 @@ dependencies:
   - werkzeug=0.14.1=py36_0
   - wheel=0.32.3=py36_0
   - xz=5.2.4=h14c3975_4
+  - yaml=0.1.7=had09818_2
   - zlib=1.2.11=h7b6447c_3
+  - pip:
+    - python-speech-features==0.6
