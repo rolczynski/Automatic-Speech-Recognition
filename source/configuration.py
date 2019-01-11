@@ -10,20 +10,20 @@ class Configuration:
     def __init__(self, file_path):
         """ All parameters saved in .yaml file convert to dot accessible """
         self._file_path = file_path
-        self._data = self.__read_yaml_file()
-        self.__check_file(required_keys=['alphabet', 'model', 'callbacks', 'optimizer'])
+        self._data = self._read_yaml_file()
+        self._check_file(required_keys=['alphabet', 'model', 'callbacks', 'optimizer'])
         self.alphabet = self._data.get('alphabet')
         self.model = self._data.get('model')
         self.callbacks = self._data.get('callbacks')
         self.optimizer = self._data.get('optimizer')
 
 
-    def __read_yaml_file(self):
+    def _read_yaml_file(self):
         """ Read YAML configuration file """
         with open(self._file_path, 'r') as stream:
             return yaml.load(stream)
 
 
-    def __check_file(self, required_keys):
+    def _check_file(self, required_keys):
         if not all(key in self._data for key in required_keys):
             raise KeyError(f'Configuration file should have all required keys: {required_keys}')
