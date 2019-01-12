@@ -16,8 +16,8 @@ class DataGenerator(Sequence):
     References:
     https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly.html
     """
-    def __init__(self, source_indicators, alphabet, shuffle_after_epoch=1, batch_size=30, features_store=False):
-        self._source_indicators = source_indicators
+    def __init__(self, metadata, alphabet, shuffle_after_epoch=1, batch_size=30, features_store=False):
+        self._metadata = metadata
         self._features_store = features_store
         self._alphabet = alphabet
         self._batch_size = batch_size
@@ -31,22 +31,22 @@ class DataGenerator(Sequence):
     def from_audio_files(cls, file_path, **kwargs):
         """ Create generator from csv file. The file contains audio file paths
         with corresponding transcriptions. """
-        source_indicators = pd.read_csv(file_path, usecols=['name', 'transcript'],
-                                        sep=',', encoding='utf-8', header=0)
-        return cls(source_indicators=source_indicators, **kwargs)
+        metadata = pd.read_csv(file_path, usecols=['path', 'transcript'], sep=',', encoding='utf-8', header=0)
+        return cls(metadata=metadata, **kwargs)
 
 
     @classmethod
     def from_prepared_features(cls, file_path, **kwargs):
-        """ Create generator from prepared features saved in the HDF5 format. """
+        """ Create generator from prepared features saved in the HDF5 format.
+        The hdf5 file has the hierarchy with /-separator and also can be invoke via `path`. """
         features_store = h5py.File(file_path, mode='r')
-        source_indicators = pd.HDFStore(file_path, mode='r')['source_indicators']   # Read DataFrame via PyTables
-        return cls(source_indicators=source_indicators, features_store=features_store, **kwargs)
+        metadata = pd.HDFStore(file_path, mode='r')['metadata']   # Read DataFrame via PyTables
+        return cls(metadata=metadata, features_store=features_store, **kwargs)
 
 
     def __len__(self):
         """ Denotes the number of batches per epoch. """
-        return int(np.floor(len(self._source_indicators.index) / self._batch_size))
+        return int(np.floor(len(self._metadata.index) / self._batch_size))
 
 
     def __getitem__(self, next_index):
@@ -58,26 +58,26 @@ class DataGenerator(Sequence):
     def _get_batch(self, index):
         """ Read (if features store exist) or generate features and labels batch. """
         start, end = index*self._batch_size, (index+1)*self._batch_size
-        batch_indicators = self._source_indicators[start:end]
-        names, transcripts = batch_indicators.name, batch_indicators.transcript
+        metadata = self._metadata[start:end]
+        paths, transcripts = metadata.path, metadata.transcript
 
         labels = text.get_batch_labels(transcripts, self._alphabet)
         if self._features_store:
-            features = self._read_features(names)
+            features = self._read_features(paths)
         else:
-            features = self._extract_features(names)
+            features = self._extract_features(paths)
         return features, labels
 
 
-    def _read_features(self, names):
-        """ Read already prepared features from the audio store. """
-        features = [self._features_store[name][:] for name in names]
+    def _read_features(self, paths):
+        """ Read already prepared features from the store. """
+        features = [self._features_store[path][:] for path in paths]
         return audio.align(features)
 
 
-    def _extract_features(self, names):
+    def _extract_features(self, paths):
         """ Extract features from the audio files (mono 16kHz). """
-        return audio.get_features_mfcc(files=names)
+        return audio.get_features_mfcc(files=paths)
 
 
     def on_epoch_end(self):
