@@ -31,7 +31,7 @@ class DataGenerator(Sequence):
     def from_audio_files(cls, file_path, **kwargs):
         """ Create generator from csv file. The file contains audio file paths
         with corresponding transcriptions. """
-        source_indicators = pd.read_csv(file_path, names=['name', 'transcript'],
+        source_indicators = pd.read_csv(file_path, usecols=['name', 'transcript'],
                                         sep=',', encoding='utf-8', header=0)
         return cls(source_indicators=source_indicators, **kwargs)
 
