@@ -112,13 +112,12 @@ def generate_segmented_samples(audio_file: str, segmented_source: pd.DataFrame, 
     return samples
 
 
-def generate_sample(audio_file: str, audio_source: pd.DataFrame, reference: pd.DataFrame):
+def generate_sample(audio_file: str, transcript: str, reference: pd.DataFrame):
     """ Generate the sample which contains precomputed features. """
     fs, audio = read_(audio_file)
     path = get_next_path(reference)
     size = audio.size
     features = python_speech_features.mfcc(audio, samplerate=fs, numcep=26)
-    transcript = ''.join(audio_source.transcript)
     sample = Sample(path, size, transcript, features)
     return sample
 
@@ -134,7 +133,7 @@ def main(store_path: str, audio_path: str, segmented_path: str, max_words: int):
             if segmented_source and max_words:
                 samples = generate_segmented_samples(audio_file, segmented_source, max_words, metadata)
             else:
-                samples = [generate_sample(audio_file, audio_source, metadata)]
+                samples = [generate_sample(audio_file, transcript, metadata)]
 
             for sample in samples:
                 save_in(store, sample, references=metadata)
