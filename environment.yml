@@ -6,6 +6,8 @@ dependencies:
   - absl-py=0.6.1=py36_0
   - astor=0.7.1=py36_0
   - blas=1.0=mkl
+  - blosc=1.14.4=hdbcaa40_0
+  - bzip2=1.0.6=h14c3975_5
   - c-ares=1.15.0=h7b6447c_1
   - ca-certificates=2018.03.07=0
   - certifi=2018.11.29=py36_0
@@ -28,17 +30,20 @@ dependencies:
   - libgfortran-ng=7.3.0=hdf63c60_0
   - libprotobuf=3.6.1=hd408876_0
   - libstdcxx-ng=8.2.0=hdf63c60_1
+  - lzo=2.10=h49e0be7_2
   - markdown=3.0.1=py36_0
   - mkl=2019.1=144
   - mkl_fft=1.0.6=py36hd81dba3_0
   - mkl_random=1.0.2=py36hd81dba3_0
   - ncurses=6.1=he6710b0_1
+  - numexpr=2.6.9=py36h9e4a6bb_0
   - numpy=1.15.4=py36h7e9f1db_0
   - numpy-base=1.15.4=py36hde5b4d6_0
   - openssl=1.1.1a=h7b6447c_0
   - pandas=0.23.4=py36h04863e7_0
   - pip=18.1=py36_0
   - protobuf=3.6.1=py36he6710b0_0
+  - pytables=3.4.4=py36h71ec239_0
   - python=3.6.8=h0371630_0
   - python-dateutil=2.7.5=py36_0
   - pytz=2018.7=py36_0
@@ -47,6 +52,7 @@ dependencies:
   - scipy=1.1.0=py36h7c811a0_2
   - setuptools=40.6.3=py36_0
   - six=1.12.0=py36_0
+  - snappy=1.1.7=hbae5bb6_3
   - sqlite=3.26.0=h7b6447c_0
   - tensorboard=1.12.2=py36he6710b0_0
   - tensorflow=1.12.0=gpu_py36he74679b_0
@@ -61,3 +67,4 @@ dependencies:
   - zlib=1.2.11=h7b6447c_3
   - pip:
     - python-speech-features==0.6
+    - tables==3.4.4
