@@ -3,7 +3,7 @@
 # More information you can find in the `text.Alphabet` class.
 
 alphabet:
-  file_path: data/alphabet.txt
+  file_path: data/polish-alphabet.txt
 
 
 # Custom architecture can be added to the file `model.py`.
