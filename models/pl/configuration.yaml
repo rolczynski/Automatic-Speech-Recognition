@@ -36,6 +36,9 @@ optimizer:
 callbacks:
 - name: TerminateOnNaN
 
+- name: ResultKeeper
+  file_name: results.bin
+
 - name: CustomModelCheckpoint
   log_dir: checkpoints
 
