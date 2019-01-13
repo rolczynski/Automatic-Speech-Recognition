@@ -1,3 +1,4 @@
+import os
 import dill
 import numpy as np
 import tensorflow as tf
@@ -9,7 +10,7 @@ from keras.optimizers import SGD, Adam
 from keras.backend.tensorflow_backend import _get_available_gpus as get_available_gpus
 
 from source import audio, model, text, ctc_decoder, utils
-from source.callbacks import CustomModelCheckpoint, CustomTensorBoard, CustomEarlyStopping
+from source.callbacks import CustomModelCheckpoint, CustomTensorBoard, CustomEarlyStopping, ResultKeeper
 from source.configuration import Configuration
 from source.utils import make_keras_picklable
 make_keras_picklable()
@@ -108,9 +109,10 @@ class DeepSpeech:
 
     def to_cpu(self):
         """ Convert the model which supports the CPU. """
-        weights = self.model.get_weights()
         cpu_model = self._get_model(is_gpu=False, **self._model_params)
-        cpu_model.set_weights(weights)
+        self.model.save_weights('temp')     # Use temp file because problems occurs
+        cpu_model.load_weights('temp')      # with loading weights directly from CuDNNLSTM
+        os.remove('temp')                   # (also precision does not match: float/double)
         self.model = cpu_model
 
 
@@ -153,6 +155,9 @@ class DeepSpeech:
 
             if name == 'TerminateOnNaN':
                 callbacks.append(TerminateOnNaN())
+
+            elif name == 'ResultKeeper':
+                callbacks.append(ResultKeeper(**configuration))
 
             elif name == 'CustomEarlyStopping':
                 callbacks.append(CustomEarlyStopping(**configuration))

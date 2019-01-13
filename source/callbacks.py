@@ -1,12 +1,58 @@
 import os
 import numpy as np
 import tensorflow as tf
+import logging
 from keras.callbacks import Callback, TensorBoard, EarlyStopping
+
+from source.utils import save
+logger = logging.getLogger('deepspeech')
+
+
+class ResultKeeper(Callback):
+    """ Save evaluation result and log the processing results. """
+
+    def __init__(self, file_name):
+        super().__init__()
+        self.results = []
+        self.file_name = file_name
+
+
+    def _set_up_new_batch(self, *_):
+        """ Set up the new list for batch results."""
+        self.batch = []
+
+    on_epoch_begin = _set_up_new_batch
+
+
+    def _save_batch_result(self, index, logs={}):
+        """ Add next batch loss. """
+        loss = logs.get('loss')
+        self.batch.append(loss)
+        logger.info(f'Batch ({index}): {loss:.2f}')
+
+    on_batch_end = _save_batch_result
+
+
+    def _save_epoch_results(self, epoch, logs={}):
+        """ Collect all information about each epoch. """
+        loss = logs.get('loss')
+        val_loss = logs.get('val_loss')
+        self.results.append([epoch, loss, val_loss, self.batch])
+        logger.info(f'Epoch ({epoch}): {loss}   {val_loss}')
+
+    on_epoch_end = _save_epoch_results
+
+
+    def _save_results(self, *_):
+        """ Save final results. """
+        save(self.results, self.file_name)
+        logger.info(f'Evaluation results saved in {self.file_name}')
+
+    on_train_end = _save_results
 
 
 class CustomModelCheckpoint(Callback):
-    """ Save model architecture and weights for the single or multi-gpu
-    model. """
+    """ Save model architecture and weights for the single or multi-gpu model. """
 
     def __init__(self, log_dir):
         """ Create directory where the files are stored if needed """
@@ -15,15 +61,15 @@ class CustomModelCheckpoint(Callback):
         self.best_result = np.inf
 
 
-    def _create_directory(self, _):
+    def _create_log_directory(self, _):
         """ Create the directory where the checkpoints are saved. """
         if not os.path.isdir(self.log_dir):
             os.makedirs(self.log_dir)
 
-    on_train_begin = _create_directory
+    on_train_begin = _create_log_directory
 
 
-    def _save_model(self, epoch, logs={}):
+    def _save_model_weights(self, epoch, logs={}):
         """ Save model with weights of the single-gpu template model. """
         val_loss = logs.get('val_loss')
         name = f'weights.{epoch + 1:02d}-{val_loss:.2f}.hdf5'
@@ -33,7 +79,7 @@ class CustomModelCheckpoint(Callback):
             self.best_result = val_loss
             self.model.history.best_weights_path = file_path
 
-    on_epoch_end = _save_model
+    on_epoch_end = _save_model_weights
 
 
 class CustomTensorBoard(TensorBoard):
@@ -69,6 +115,7 @@ class CustomEarlyStopping(EarlyStopping):
 
 
     def on_epoch_end(self, epoch, logs=None):
+        """ Finish training if the `monitor` value is too high. """
         super().on_epoch_end(epoch, logs)
         current = logs.get(self.monitor)
         if epoch in self._mini_targets and current > self._mini_targets[epoch]:
