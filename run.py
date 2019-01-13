@@ -17,7 +17,7 @@ def parse_arguments():
     parser.add_argument('--shuffle_after_epoch', type=int, default=1, help='Shuffle generator indices after epoch')
     parser.add_argument('--pretrained', help='Fit the pretrained model')
     parser.add_argument('--log_file', help='Log file')
-    parser.add_argument('--log_level', type=int, default=10, help='Log level')
+    parser.add_argument('--log_level', type=int, default=20, help='Log level')
     args = parser.parse_args()
     return args
 
@@ -54,6 +54,5 @@ def fit(args):
 if __name__ == "__main__":
     arguments = parse_arguments()
     os.makedirs(arguments.home_directory)
-    if arguments.log_file:
-        create_logger(arguments.log_file, arguments.log_level, name='deepspeech')
+    create_logger(arguments.log_file, level=arguments.log_level, name='deepspeech')
     fit(arguments)

@@ -25,6 +25,12 @@ def make_keras_picklable():
     Model.__setstate__ = __setstate__
 
 
+def save(data, file_name):
+    """ Save arbitrary data in the file. """
+    with open(file_name, mode='wb') as file:
+        dill.dump(data, file)
+
+
 def load_model(model_path):
     """ Load model even without the deepspeech package. """
     with open(model_path, mode='rb') as f:
@@ -42,14 +48,18 @@ def chdir(to='ROOT'):
     os.chdir(new_cwd)
 
 
-def create_logger(file_path, level=10, name='deepspeech'):
+def create_logger(file_path, level=20, name='deepspeech'):
     """ Create the logger with default"""
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
-    handler = logging.FileHandler(file_path, mode='w')  # handle all messages from logger
+    if file_path:
+        handler = logging.FileHandler(file_path, mode='w')
+    else:
+        handler = logging.StreamHandler()
+
     formater = logging.Formatter('%(asctime)s [%(levelname)-8s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     handler.setFormatter(formater)
-
+    # handle all messages from logger (not set handler level)
     logger.addHandler(handler)
     return logger
