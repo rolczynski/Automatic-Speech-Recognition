@@ -20,7 +20,7 @@ def make_mfcc(file_path: str):
 def align(arrays: list, default=0):
     """ Pad arrays along time dimensions. Return the single array (batch_size, time, features). """
     max_array = max(arrays, key=len)
-    X = np.full(shape=[len(arrays), *max_array.shape], fill_value=default)
+    X = np.full(shape=[len(arrays), *max_array.shape], fill_value=default, dtype=np.float64)
     for index, array in enumerate(arrays):
         time_dim, features_dim = array.shape
         X[index, :time_dim] = array
