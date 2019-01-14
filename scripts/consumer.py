@@ -2,6 +2,9 @@ import os
 import subprocess
 import time
 import argparse
+import sys  # Add `source` module (needed when it runs via terminal)
+sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
+
 from source.utils import chdir, create_logger
 
 
