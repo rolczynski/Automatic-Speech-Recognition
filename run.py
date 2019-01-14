@@ -54,5 +54,6 @@ def fit(args):
 if __name__ == "__main__":
     arguments = parse_arguments()
     os.makedirs(arguments.home_directory, exist_ok=True)
-    create_logger(arguments.log_file, level=arguments.log_level, name='deepspeech')
+    logger = create_logger(arguments.log_file, level=arguments.log_level, name='deepspeech')
+    logger.info(f'Arguments: \n{arguments}')
     fit(arguments)
