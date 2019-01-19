@@ -2,16 +2,31 @@ import numpy as np
 from typing import List
 import math
 import collections
+import tensorflow as tf
+from keras.backend import tensorflow_backend as K
+
 from source.text import Alphabet
 NEG_INF = -float("inf")
 
 
-def batch_decode(batch_y_hat, alphabet, **kwargs):
+def get_tf_decoder(y_pred, beam_width=1000):
+    """ The TensorFlow implementation of the CTC decoder. """
+    def get_length(tensor):
+        lengths = tf.reduce_sum(tf.ones_like(tensor), 1)
+        return tf.cast(lengths, tf.int32)
+
+    sequence_length = get_length(tf.reduce_max(y_pred, 2))
+    top_k_decoded, _ = K.ctc_decode(y_pred, sequence_length, greedy=False, beam_width=beam_width)
+    decoder = K.function([y_pred], [top_k_decoded[0]])
+    return decoder
+
+
+def batch_naive_decode(batch_y_hat, alphabet, **kwargs):
     """ Enable to batch decode (using multiprocessing in the future). """
-    return [decode(y_hat, alphabet, **kwargs) for y_hat in batch_y_hat]
+    return [naive_decode(y_hat, alphabet, **kwargs) for y_hat in batch_y_hat]
 
 
-def decode(probs: np.ndarray, alphabet: Alphabet, beam_size=100, prune=0.001):
+def naive_decode(probs: np.ndarray, alphabet: Alphabet, beam_size=100, prune=0.001):
     """
     Performs inference for the given output probabilities.
     Arguments:
