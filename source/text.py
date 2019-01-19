@@ -42,7 +42,7 @@ class Alphabet:
                     continue
                 # Char can contain more than one letter
                 char = line[:-1]  # remove the line ending
-                self._label_to_str += char
+                self._label_to_str.append(char)
                 self._str_to_label[char] = self.size
                 self.size += 1
             # Blank token is added on the end
