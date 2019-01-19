@@ -87,9 +87,21 @@ class DeepSpeech:
         return sentences
 
 
-    def decode(self, y_hat: np.ndarray, beam_size=100, prune=0.001):
-        """ Decode probabilities along characters using the beam search algorithm. """
-        return ctc_decoder.batch_decode(y_hat, self.alphabet, beam_size=beam_size, prune=prune)
+    def predict_on_batch(self, X):
+        """ Predict on the batch. """
+        return self.model.predict_on_batch(X)
+
+
+    def decode(self, y_hat: np.ndarray, beam_size=100, prune=0.001, naive=False):
+        """ Decode probabilities along characters using the beam search algorithm.
+        Additionally can be added the warp-ctc (GPU support). """
+        if not naive:
+            output_tensor = self.model.output
+            decode = ctc_decoder.get_tf_decoder(output_tensor, beam_size)
+            labels, = decode([y_hat])
+            return text.get_batch_transcripts(labels, self.alphabet)
+        else:
+            return ctc_decoder.batch_naive_decode(y_hat, self.alphabet, beam_size=beam_size, prune=prune)
 
 
     def copy_weights(self, model_path: str):
