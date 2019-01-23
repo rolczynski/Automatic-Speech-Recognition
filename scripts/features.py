@@ -8,8 +8,10 @@ import scipy.io.wavfile as wav
 from functools import partial
 from collections import namedtuple
 from typing import Callable
+import sys  # Add `source` module (needed when it runs via terminal)
+sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 
-from utils import chdir
+from source.utils import chdir
 
 Sample = namedtuple('Sample', ['path', 'size', 'transcript', 'features'])
 
@@ -127,16 +129,27 @@ def main(store_path: str, audio_path: str, segmented_path: str, max_words: int):
     metadata = pd.DataFrame(columns=['path', 'size', 'transcript'])
     audio_source, segmented_source = read_dataframes(audio_path, segmented_path)
 
+    errors = 0
     with h5py.File(store_path, mode='w') as store:
-        for _, (audio_file, transcript) in audio_source.iterrows():
-
-            if segmented_source and max_words:
-                samples = generate_segmented_samples(audio_file, segmented_source, max_words, metadata)
-            else:
-                samples = [generate_sample(audio_file, transcript, metadata)]
+        for index, (audio_file, transcript) in audio_source.iterrows():
+            try:
+                if bool(segmented_source) and max_words:
+                    samples = generate_segmented_samples(audio_file, segmented_source, max_words, metadata)
+                else:
+                    samples = [generate_sample(audio_file, transcript, metadata)]
+            except:
+                errors += 1
+                print(f'can not find ({errors}): {audio_file}')
+                continue
 
             for sample in samples:
                 save_in(store, sample, references=metadata)
+
+            if index % 1e3 == 0:
+                print(index)
+
+    metadata['transcript'] = metadata.transcript.str.lower()
+    metadata.sort_values(by='size', inplace=True)
 
     with pd.HDFStore(store_path, mode='r+') as store:
         store.put('metadata', metadata)
