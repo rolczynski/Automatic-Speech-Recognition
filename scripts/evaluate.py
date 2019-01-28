@@ -9,7 +9,7 @@ from functools import reduce
 from source.utils import chdir, load_model, create_logger
 from source.generator import DataGenerator
 from source.text import get_batch_transcripts
-from scripts.wer import edit_distance
+from scripts.confusion_matrix import edit_distance
 
 
 def calculate_units(model):
