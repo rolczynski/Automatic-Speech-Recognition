@@ -59,6 +59,7 @@ class CustomModelCheckpoint(Callback):
         super().__init__()
         self.log_dir = log_dir
         self.best_result = np.inf
+        self.best_weights_path = None
 
 
     def _create_log_directory(self, _):
@@ -77,9 +78,17 @@ class CustomModelCheckpoint(Callback):
         self.model.template_model.save_weights(file_path, overwrite=True)
         if val_loss < self.best_result:
             self.best_result = val_loss
-            self.model.history.best_weights_path = file_path
+            self.best_weights_path = file_path
 
     on_epoch_end = _save_model_weights
+
+
+    def _set_best_weights_to_model(self, history):
+        """ Set best weights to the model. Checkpoint callback save the best
+        weights path. """
+        self.model.load_weights(self.best_weights_path)
+
+    on_train_end = _set_best_weights_to_model
 
 
 class CustomTensorBoard(TensorBoard):
