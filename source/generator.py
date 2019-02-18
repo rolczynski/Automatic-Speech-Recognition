@@ -4,7 +4,7 @@ import pandas as pd
 from keras.utils import Sequence
 from source import audio, text
 from source.text import Alphabet
-from source.audio import FeatureExtractor
+from source.audio import FeaturesExtractor
 
 
 class DataGenerator(Sequence):
@@ -21,14 +21,14 @@ class DataGenerator(Sequence):
     def __init__(self,
                  metadata: pd.DataFrame,
                  alphabet: Alphabet,
-                 feature_extractor: FeatureExtractor,
+                 features_extractor: FeaturesExtractor,
                  shuffle_after_epoch=1,
                  batch_size=30,
                  features_store=False):
         self._metadata = metadata
         self._features_store = features_store
         self._alphabet = alphabet
-        self._feature_extractor = feature_extractor
+        self._features_extractor = features_extractor
         self._batch_size = batch_size
         self._shuffle_after_epoch = shuffle_after_epoch
 
@@ -81,12 +81,12 @@ class DataGenerator(Sequence):
     def _read_features(self, paths):
         """ Read already prepared features from the store. """
         features = [self._features_store[path][:] for path in paths]
-        return self._feature_extractor.align(features)
+        return self._features_extractor.align(features)
 
 
     def _extract_features(self, paths):
         """ Extract features from the audio files (mono 16kHz). """
-        return self._feature_extractor.get_features_mfcc(files=paths)
+        return self._features_extractor.get_features_mfcc(files=paths)
 
 
     def on_epoch_end(self):
