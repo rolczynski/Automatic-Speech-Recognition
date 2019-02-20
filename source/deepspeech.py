@@ -1,19 +1,22 @@
 import os
-import dill
 import numpy as np
 import tensorflow as tf
 from math import exp
+from functools import partial
+from typing import List, Callable
+from keras import Model
 from keras.layers import Input
 from keras.utils import multi_gpu_model
-from keras.callbacks import TerminateOnNaN, LearningRateScheduler
-from keras.optimizers import SGD, Adam
+from keras.callbacks import Callback, TerminateOnNaN, LearningRateScheduler, History
+from keras.optimizers import Optimizer, SGD, Adam
 from keras.backend.tensorflow_backend import _get_available_gpus as get_available_gpus
 
-from source import audio, model, text, ctc_decoder, utils
+from source import audio, model, text, ctc_decoder
+from source.text import Alphabet
+from source.audio import FeaturesExtractor
+from source.generator import DataGenerator
 from source.callbacks import CustomModelCheckpoint, CustomTensorBoard, CustomEarlyStopping, ResultKeeper
 from source.configuration import Configuration
-from source.utils import make_keras_picklable
-make_keras_picklable()
 
 
 class DeepSpeech:
@@ -25,141 +28,166 @@ class DeepSpeech:
     """
 
     def __init__(self,
-                 model_params: dict,
-                 alphabet_params: dict,
-                 optimizer_params: dict,
-                 callbacks_params: list):
+                 model: Model,
+                 loss: Callable,
+                 optimizer: Optimizer,
+                 callbacks: List[Callback],
+                 alphabet: Alphabet,
+                 decoder: Callable,
+                 features_extractor: FeaturesExtractor,
+                 gpus: list = []):
         """ Setup configuration and compile the model """
-        self._model_params = model_params
-        self._alphabet_params = alphabet_params
-        self._optimizer_params = optimizer_params
-        self._callbacks_params = callbacks_params
-        self._gpus = get_available_gpus()
-        self.is_gpu = len(self._gpus) > 0   # If GPUs available, use them by default
-        self.model = self._get_model(is_gpu=self.is_gpu, **model_params)
-        self.alphabet = self._get_alphabet(**alphabet_params)
+        self.model = model
+        self.alphabet = alphabet
+        self.features_extractor = features_extractor
+        self.decoder = decoder
+        self.callbacks = callbacks
+        self.gpus = gpus
+        self.distributed_model = self.compile_model(model, optimizer, loss, gpus)
 
 
     @classmethod
-    def from_configuration(cls, file_path: str):
-        """ Create empty DeepSpeech object base on the configuration file. """
+    def from_configuration(cls, file_path: str) -> 'DeepSpeech':
+        """ Create DeepSpeech object base on the configuration file. """
         config = Configuration(file_path)
-        return cls(config.model, config.alphabet, config.optimizer, config.callbacks)
+        gpus = get_available_gpus()
+
+        model = cls.get_model(is_gpu=len(gpus) > 0, **config.model)
+        loss = cls.get_loss()
+        optimizer = cls.get_optimizer(**config.optimizer)
+        callbacks = cls.get_callbacks(config.callbacks)
+
+        alphabet = cls.get_alphabet(**config.alphabet)
+        features_extractor = cls.get_features_extractor(**config.features_extractor)
+        decoder = cls.get_decoder(alphabet=alphabet, model=model, **config.decoder)
+        return cls(model, loss, optimizer, callbacks, alphabet, decoder, features_extractor, gpus)
 
 
-    def fit_generator(self, train_generator, dev_generator, **kwargs):
-        """ Train model using train and dev data generators base on the Keras method."""
-        gpus_num = len(self._gpus)
-        if gpus_num > 1:
-            distributed_model = multi_gpu_model(self.model, gpus_num)
-        else:
-            distributed_model = self.model
-
-        y = Input(name='y', shape=[None], dtype='int32')
-        # Due to problem with the optimizer/objective serialization
-        # the initialization has to be placed here
-        optimizer = self._get_optimizer(**self._optimizer_params)
-        objective = self._get_objective()
-        distributed_model.compile(optimizer=optimizer,
-                                  loss=objective,
-                                  target_tensors=[y])
-
-        # The template model shares the same weights, but it is not distributed
-        # along different devices. It is useful for callbacks.
-        distributed_model.template_model = self.model
-
-        callbacks = self._get_callbacks(self._callbacks_params)
-        history = distributed_model.fit_generator(
-            generator=train_generator,
-            validation_data=dev_generator,
-            callbacks=callbacks,
-            **kwargs
-        )
-        self._set_best_weights_to_model(history)
-        return callbacks
-
-
-    def __call__(self, files: list):
+    def __call__(self, files: List[str]) -> List[str]:
         """ Easy interaction with the trained model """
-        X = audio.get_features_mfcc(files)
-        y_hat = self.model.predict_on_batch(X)
+        X = self.get_features(files)
+        y_hat = self.predict(X)
         sentences = self.decode(y_hat)
         return sentences
 
 
-    def predict_on_batch(self, X):
+    def get_features(self, files: List[str]) -> np.ndarray:
+        """ Extract features from files. """
+        return self.features_extractor.get_features_mfcc(files)
+
+
+    def get_labels(self, transcripts: List[str]) -> np.ndarray:
+        """ Convert transcripts to labels. """
+        return text.get_batch_labels(transcripts, self.alphabet)
+
+
+    def create_generator(self, file_path, source='from_audio_files', **kwargs) -> DataGenerator:
+        """ Create generator from audio files (csv file) or prepared features (hdf5 file). """
+        _create_generator = getattr(DataGenerator, source)
+        return _create_generator(file_path, self.alphabet, self.features_extractor, **kwargs)
+
+
+    def fit(self, train_generator, dev_generator, **kwargs) -> History:
+        """ Train model using train and dev data generators base on the Keras method."""
+        return self.distributed_model.fit_generator(generator=train_generator,
+                                                    validation_data=dev_generator,
+                                                    callbacks=self.callbacks,
+                                                    **kwargs)
+
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """ Predict on the batch. """
-        return self.model.predict_on_batch(X)
+        return self.distributed_model.predict_on_batch(X)
 
 
-    def decode(self, y_hat: np.ndarray, beam_size=100, prune=0.001, naive=False):
-        """ Decode probabilities along characters using the beam search algorithm.
-        Additionally can be added the warp-ctc (GPU support). """
-        if not naive:
-            output_tensor = self.model.output
-            decode = ctc_decoder.get_tf_decoder(output_tensor, beam_size)
-            labels, = decode([y_hat])
-            return text.get_batch_transcripts(labels, self.alphabet)
-        else:
-            return ctc_decoder.batch_naive_decode(y_hat, self.alphabet, beam_size=beam_size, prune=prune)
+    def decode(self, y_hat: np.ndarray) -> List[str]:
+        """ Decode probabilities along characters using the beam search algorithm. """
+        return self.decoder(y_hat)
 
 
-    def copy_weights(self, model_path: str):
-        """ Copy weights from the pretrained model. """
-        pretrained_model = utils.load_model(model_path)
-        weights = pretrained_model.model.get_weights()
-        self.model.set_weights(weights)
+    def load_weights(self, language: str = None, path: str = None):
+        """ Load model weights from the pretrained model. """
+        if language:
+            path = os.path.join('models', language, 'weights.hdf5')
+        self.model.load_weights(path)
 
 
-    def save(self, model_path: str):
-        """ Pickle the object DeepSpeech into one binary file. This is not
-        supported by Keras due to limitation of the Theano backend. """
-        with open(model_path, mode='wb') as file:
-            self.to_cpu()   # Always save the CPU model (then everyone can use is)
-            dill.dump(self, file)
+    def save(self, path: str):
+        """ Save model weights. Object can be easily reinitialized. """
+        self.model.save_weights(path)
 
 
-    def to_cpu(self):
-        """ Convert the model which supports the CPU. """
-        cpu_model = self._get_model(is_gpu=False, **self._model_params)
-        self.model.save_weights('temp')     # Use temp file because problems occurs
-        cpu_model.load_weights('temp')      # with loading weights directly from CuDNNLSTM
-        os.remove('temp')                   # (also precision does not match: float/double)
-        self.model = cpu_model
-
-
-    def _get_model(self, **kwargs):
+    @staticmethod
+    def get_model(name: str, **kwargs) -> Model:
         """ Define model base on the experiment configuration. """
-        return model.get_model(**kwargs)
+        if name == 'deepspeech':
+            return model.deepspeech(**kwargs)
+        elif name == 'deepspeech-custom':
+            return model.deepspeech_custom(**kwargs)
+        raise ValueError('Wrong model name')
 
 
-    def _get_alphabet(self, **kwargs):
-        """ Alphabet consists all valid characters / phonemes. """
+    @staticmethod
+    def compile_model(model: Model, optimizer: Optimizer, loss: Callable, gpus: list) -> Model:
+        """ Compiled the model. The template model shares the same weights, but it is not distributed
+        along different devices. It is useful for callbacks."""
+        gpus_num = len(gpus)
+        distributed_model = multi_gpu_model(model, gpus_num) if gpus_num > 1 else model
+        y = Input(name='y', shape=[None], dtype='int32')
+        distributed_model.compile(optimizer, loss, target_tensors=[y])
+        distributed_model.template_model = model
+        return distributed_model
+
+
+    @staticmethod
+    def get_alphabet(**kwargs) -> Alphabet:
+        """ Alphabet consists all valid characters / phonemes and helps work with texts. """
         return text.Alphabet(**kwargs)
 
 
-    def _get_optimizer(self, name: str, **kwargs):
+    @staticmethod
+    def get_features_extractor(**kwargs) -> FeaturesExtractor:
+        """ Feature Extractor helps to convert audio files to features. """
+        return audio.FeaturesExtractor(**kwargs)
+
+
+    @staticmethod
+    def get_optimizer(name: str, **kwargs) -> Optimizer:
         """ Define optimizer - use keras documentation `keras.optimizers`. """
         if name == 'sgd':
             return SGD(**kwargs)
         elif name == 'adam':
             return Adam(**kwargs)
+        raise ValueError('Wrong optimizer name')
 
 
-    def _get_objective(self):
+    @staticmethod
+    def get_loss() -> Callable:
         """ The CTC loss using TensorFlow's `ctc_loss` using Keras backend. """
         def get_length(tensor):
             lengths = tf.reduce_sum(tf.ones_like(tensor), 1)
             return tf.reshape(tf.cast(lengths, tf.int32), [-1, 1])
 
-        def ctc_objective(y, y_hat):
+        def ctc_loss(y, y_hat):
             sequence_length = get_length(tf.reduce_max(y_hat, 2))
             label_length = get_length(y)
             return tf.keras.backend.ctc_batch_cost(y, y_hat, sequence_length, label_length)
-        return ctc_objective
+        return ctc_loss
 
 
-    def _get_callbacks(self, configurations: list):
+    @staticmethod
+    def get_decoder(name: str, alphabet: Alphabet, model: Model, **kwargs) -> Callable:
+        """ Additionally can be added the warp-ctc (GPU support). """
+        if name == 'naive':
+            return partial(ctc_decoder.batch_naive_decode, alphabet=alphabet, **kwargs)
+        elif name == 'tensorflow':
+            decoder = ctc_decoder.get_tensorflow_decoder(model.output, **kwargs)
+            return partial(ctc_decoder.batch_tensorflow_decode, alphabet=alphabet, decoder=decoder)
+        raise ValueError('Wrong decoder name')
+
+
+    @staticmethod
+    def get_callbacks(configurations: list) -> List[Callback]:
         """ Define callbacks to get a view on internal states during training. """
         callbacks = []
         for configuration in configurations:
@@ -185,13 +213,3 @@ class DeepSpeech:
             elif name == 'CustomTensorBoard':
                 callbacks.append(CustomTensorBoard(**configuration))
         return callbacks
-
-
-    def _set_best_weights_to_model(self, history):
-        """ Set best weights to the model. Checkpoint callback save the best
-        weights path. """
-        if hasattr(history, 'best_weights_path'):
-            file_path = history.best_weights_path
-            self.model.load_weights(file_path)
-        else:
-            raise Warning('DeepSpeech can not set the best weights. CustomModelCheckpoint is required')
