@@ -5,10 +5,10 @@ import scipy.io.wavfile as wav
 
 class FeaturesExtractor:
 
-    def __init__(self, params: dict):
-        if 'winfunc' in params and params['winfunc'] == 'hamming':
-            params['winfunc'] = np.hamming
-        self.params = params
+    def __init__(self, **kwargs):
+        if 'winfunc' in kwargs and kwargs['winfunc'] == 'hamming':
+            kwargs['winfunc'] = np.hamming
+        self.params = kwargs
 
 
     def get_features_mfcc(self, files: list) -> np.ndarray:
