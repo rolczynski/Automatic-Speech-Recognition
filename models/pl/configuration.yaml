@@ -1,27 +1,26 @@
 
-# Describe valid chars (Mozilla DeepSpeech format).
-# More information you can find in the `text.Alphabet` class.
-
+# Describe valid chars used to convert transcript into sequence of
+# labels and vice versa.
 alphabet:
-  file_path: data/polish-alphabet.txt
+  file_path: models/pl/alphabet.txt
 
 
-# Custom architecture can be added to the file `model.py`.
-# Define the model name and pass parameters.
+# Define how audio files are processing.
+features_extractor:
+  numcep: 26
+  winlen: 0.032
+  winstep: 0.02
+  winfunc: hamming
 
+
+# Custom architecture can be created using `deepspeech-custom`.
 model:
-  name: deepspeech-ctc
-  fc_sizes: [64]
-  rnn_sizes: [64, 128, 256, 512, 1024]
-  output_dim: 36
-  random_seed: 123
-  stddev: 0.05
+  name: deepspeech
+  units: 2048
 
 
-# The available optimizers are specified in: `deepspeech.__get_optimizer` and
-# come from `keras.optimizers` module. You can use keras documentation to get
-# more information and overwrite default parameters (use the same names).
-
+# The available optimizers are specified in: `get_optimizer` and
+# come from `keras.optimizers` module.
 optimizer:
   name: adam
   lr: 0.001
@@ -30,9 +29,8 @@ optimizer:
   epsilon: 0.00000001
 
 
-# Define callbacks to get a view on internal states and statistics of the model
+# Set callbacks to get a view on internal states and statistics of the model
 # during training.
-
 callbacks:
 - name: TerminateOnNaN
 
@@ -56,3 +54,9 @@ callbacks:
     10: 100
   monitor: val_loss
   patience: 3
+
+
+# Define method of decoding probabilities into transcription
+decoder:
+  name: tensorflow
+  beam_size: 1024
