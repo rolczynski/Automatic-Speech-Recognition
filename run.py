@@ -1,7 +1,6 @@
 import os
 import argparse
 from source.deepspeech import DeepSpeech
-from source.generator import DataGenerator
 from source.utils import chdir, create_logger
 
 
@@ -23,32 +22,17 @@ def parse_arguments():
 
 
 def fit(args):
-    # Set up DeepSpeech object (and load pretrained model if provided)
     deepspeech = DeepSpeech.from_configuration(file_path=args.configuration)
     if args.pretrained:
-        deepspeech.copy_weights(args.pretrained)
+        deepspeech.load_weights(path=args.pretrained)
 
-    # Create generator from prepared features or process raw audio files (audio paths saved in csv)
-    create_generator = getattr(DataGenerator, args.source)
-    train_generator = create_generator(file_path=args.train,
-                                       alphabet=deepspeech.alphabet,
-                                       batch_size=args.batch_size,
-                                       shuffle_after_epoch=args.shuffle_after_epoch)
+    train_generator = deepspeech.create_generator(args.train, args.batch_size, source=args.source,
+                                                  shuffle_after_epoch=args.shuffle_after_epoch)
+    dev_generator = deepspeech.create_generator(args.dev, args.batch_size, source=args.source)
 
-    dev_generator = create_generator(file_path=args.dev,
-                                     alphabet=deepspeech.alphabet,
-                                     batch_size=args.batch_size)
-
-    chdir(to=args.home_directory)  # The paths can be defined as relative (e.g. used in the tensorboard)
-
-    # Choose `model.fit_generator` parameters. This allows you to do features
-    # extraction on CPU in parallel to training your model on GPU's.
-    deepspeech.fit_generator(train_generator, dev_generator, epochs=args.epochs, shuffle=False)
-    deepspeech.save('model.bin')
-
-    # Model can be loaded even without Deepspeech-Keras installation (only dependencies required)
-    # from deepspeech.utils import load_model
-    # deepspeech = load_model('model.bin')
+    chdir(to=args.home_directory)     # The paths can be defined as relative (e.g. used in the tensorboard)
+    deepspeech.fit(train_generator, dev_generator, epochs=args.epochs, shuffle=False)
+    deepspeech.save('weights.hdf5')
 
 
 if __name__ == "__main__":
