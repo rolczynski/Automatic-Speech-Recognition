@@ -84,7 +84,7 @@ class DeepSpeech:
     def create_generator(self, file_path, source='from_audio_files', **kwargs) -> DataGenerator:
         """ Create generator from audio files (csv file) or prepared features (hdf5 file). """
         _create_generator = getattr(DataGenerator, source)
-        return _create_generator(file_path, self.alphabet, self.features_extractor, **kwargs)
+        return _create_generator(file_path, alphabet=self.alphabet, features_extractor=self.features_extractor, **kwargs)
 
 
     def fit(self, train_generator, dev_generator, **kwargs) -> History:

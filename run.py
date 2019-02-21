@@ -26,9 +26,9 @@ def fit(args):
     if args.pretrained:
         deepspeech.load_weights(path=args.pretrained)
 
-    train_generator = deepspeech.create_generator(args.train, args.batch_size, source=args.source,
+    train_generator = deepspeech.create_generator(args.train, batch_size=args.batch_size, source=args.source,
                                                   shuffle_after_epoch=args.shuffle_after_epoch)
-    dev_generator = deepspeech.create_generator(args.dev, args.batch_size, source=args.source)
+    dev_generator = deepspeech.create_generator(args.dev, batch_size=args.batch_size, source=args.source)
 
     chdir(to=args.home_directory)     # The paths can be defined as relative (e.g. used in the tensorboard)
     deepspeech.fit(train_generator, dev_generator, epochs=args.epochs, shuffle=False)
