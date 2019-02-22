@@ -70,7 +70,7 @@ class DataGenerator(Sequence):
         metadata = self._metadata[start:end]
         paths, transcripts = metadata.path, metadata.transcript
 
-        labels = text.get_batch_labels(transcripts, self._alphabet)
+        labels = self._alphabet.get_batch_labels(transcripts)
         if self._features_store:
             features = self._read_features(paths)
         else:
