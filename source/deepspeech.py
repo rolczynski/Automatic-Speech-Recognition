@@ -11,7 +11,7 @@ from keras.callbacks import Callback, TerminateOnNaN, LearningRateScheduler, His
 from keras.optimizers import Optimizer, SGD, Adam
 from keras.backend.tensorflow_backend import _get_available_gpus as get_available_gpus
 
-from source import audio, model, text, ctc_decoder
+from source import audio, model, text, ctc_decoder, configuration
 from source.text import Alphabet
 from source.audio import FeaturesExtractor
 from source.generator import DataGenerator
@@ -118,16 +118,6 @@ class DeepSpeech:
 
 
     @staticmethod
-    def get_model(name: str, **kwargs) -> Model:
-        """ Define model base on the experiment configuration. """
-        if name == 'deepspeech':
-            return model.deepspeech(**kwargs)
-        elif name == 'deepspeech-custom':
-            return model.deepspeech_custom(**kwargs)
-        raise ValueError('Wrong model name')
-
-
-    @staticmethod
     def compile_model(model: Model, optimizer: Optimizer, loss: Callable, gpus: list) -> Model:
         """ Compiled the model. The template model shares the same weights, but it is not distributed
         along different devices. It is useful for callbacks."""
@@ -137,6 +127,22 @@ class DeepSpeech:
         distributed_model.compile(optimizer, loss, target_tensors=[y])
         distributed_model.template_model = model
         return distributed_model
+
+
+    @staticmethod
+    def get_configuration(file_path: str):
+        """ Read components parameters from the yaml file via Configuration object. """
+        return configuration.Configuration(file_path)
+
+
+    @staticmethod
+    def get_model(name: str, **kwargs) -> Model:
+        """ Define model base on the experiment configuration. """
+        if name == 'deepspeech':
+            return model.deepspeech(**kwargs)
+        elif name == 'deepspeech-custom':
+            return model.deepspeech_custom(**kwargs)
+        raise ValueError('Wrong model name')
 
 
     @staticmethod
