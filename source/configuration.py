@@ -1,4 +1,5 @@
 import yaml
+from typing import List, Dict
 
 
 class Configuration:
@@ -7,7 +8,7 @@ class Configuration:
     configuration object passes through all methods which required
     additional parameters.
     """
-    def __init__(self, file_path):
+    def __init__(self, file_path: str):
         """ All parameters saved in .yaml file convert to dot accessible """
         self._file_path = file_path
         self._data = self._read_yaml_file()
@@ -20,12 +21,12 @@ class Configuration:
         self.decoder = self._data.get('decoder')
 
 
-    def _read_yaml_file(self):
+    def _read_yaml_file(self) -> Dict:
         """ Read YAML configuration file """
         with open(self._file_path, 'r') as stream:
             return yaml.load(stream)
 
 
-    def _check_file(self, required_keys):
+    def _check_file(self, required_keys: List[str]):
         if not all(key in self._data for key in required_keys):
             raise KeyError(f'Configuration file should have all required keys: {required_keys}')
