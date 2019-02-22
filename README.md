@@ -1,26 +1,31 @@
 # DeepSpeech-Keras 
-
-Project DeepSpeech-Keras is an open source environment for interaction with 
-the Speech-To-Text engines. 
+The DeepSpeech-Keras project helps to do the Speech-To-Text analysis easily. 
 
 ```python
-from deepspeech import load_model
+from deepspeech import load
 
-files = ['to/test/sample.wav']
-deepspeech = load_model(name='polish-model.bin')
+deepspeech = load('pl')
+files = ['path/to/audio.wav']
 sentences = deepspeech(files)
 ```
 
-With DeepSpeech-Keras you can:
+**Using DeepSpeech-Keras you can**:
 - perform speech-to-text analysis using pre-trained models
-- tune pre-trained models with custom configuration
-- experiment and create new models on your own
+- tune pre-trained models to your needs
+- create new models on your own
 
-All of this was done using high-level neural networks [Keras API](https://github.com/keras-team/keras). 
-The main principle behind the project was that program and it's structure should be easy to use and understand.
+All of this was done using [Keras API](https://github.com/keras-team/keras) and Python 3.6. 
+The main principle behind the project is that program and it's structure should be easy to use and understand.
+
+**DeepSpeech-Keras key features**:
+- **Multi GPU support**: we do data parallelism via [`multi_gpu_model`](https://keras.io/utils/#multi_gpu_model).  This induces 
+quasi-linear speedup on up to 8 GPUs. 
+- **CuDNN support**: Model using [CuDNNLSTM](https://keras.io/layers/recurrent/) implementation by NVIDIA Developers. CPU devices is also supported.
+- **DataGenerator**: The feature extraction (on CPU) can be parallel to model training (on GPU). Moreover it can 
+use precomputed features saved in a hdf5 file. 
 
 ## Installation
-Install DeepSpeech-Keras from PyPI:
+You can use pip:
 ```bash
 pip install deepspeech-keras
 ```
@@ -32,121 +37,79 @@ git clone https://github.com/rolczynski/DeepSpeech-Keras.git
 pip install -r requirements.txt
 ```
 
+## Getting started
+The speech recognition is a tough task. You don't need to know all details to use one of the pretrained models.
+However it's worth to understand conceptional crucial components:
+- **Input**: WAVE files with mono 16-bit 16 kHz (up to 5 seconds)
+- **FeaturesExtractor**: Convert audio files using MFCC Features
+- **Model**: CTC model defined in [**Keras**](https://keras.io/) (references: [[1]](https://arxiv.org/abs/1412.5567), [[2]](https://arxiv.org/abs/1512.02595))
+- **Decoder**: Beam search algorithm with the language model support decode a sequence of probabilities using _Alphabet_
+- **DataGenerator**: Stream data to the model via generator
+- **Callbacks**: Set of functions monitoring the training
 
-## Getting started: one minute to interact
+![Overview](images/overview.png)
 
-Model training from the scratch requires heavy computation. You can make a use 
-of pre-trained models. Each published pre-trained model has these attributes:
-
-```
-deepspeech.model            # trained Keras model
-          .configuration    # parameters used during training
-          .alphabet         # describe valid chars (Mozilla DeepSpeech format)
-          .language_model   # support decoding (optional)
-```
-
-
-### Keras model
-The heart of the  _deepspeech_ object is the Keras model. You can make use of all
-available Keras functional API [methods](https://keras.io/models/model/#methods), 
-e.g. _predict_on_batch_. If you get probabilities along characters, you would 
-like to decode the most probable sequence of chars. This process can be boosted
-by using proper language model.
+Loaded pre-trained model has already all components. The prediction can be invoked implicit via `__call__` 
+method or more explicit:
 
 ```python
-from deepspeech import audio, text, load_model
+from deepspeech import load
 
-deepspeech = load_model(name='polish-model.bin')
+deepspeech = load('pl')             # Also can be: load(dir='model_dir')
 files = ['to/test/sample.wav']
-transcripts = ['this is a test']
 
-X = audio.get_features(files)
-y = text.get_batch_labels(transcripts, deepspeech.alphabet)
-
-y_hat = deepspeech.model.predict_on_batch(X)
-sentences = deepspeech.decode(y_hat) # also you could pass custom language model
-# or simple:  X, y_hat, sentences = deepspeech(files, full=True)
+X = deepspeech.get_features(files)
+y_hat = deepspeech.predict(X)
+sentences = deepspeech.decode(y_hat)
 ```
-
 
 ### Tune pre-trained model
-Rather than write your own training algorithm from scratch, you can use the _deepspeech.train_ method.
-Algorithm attributes (_generators_, _optimizer_, _ctc loss_, _callbacks_ ect) are already set and ready to be used.
-All you have to do is to create new or modify `configuration.yaml` file, where training parameters are specified.
+The heart of the  _deepspeech_  is the **Keras model** (`deepspeech.model`). You can make use of all
+available Keras [methods](https://keras.io/models/model/#methods) like _predict_on_batch_, 
+_get_weights_ ect. You can use it straightforward.
+
+However rather than write your own training routine from scratch, you can use the _deepspeech.fit_ method. 
+Algorithm attributes (_generators_, _optimizer_, _ctc loss_, _callbacks_ ect) are already set and 
+they are ready to use. All you have to do is to create new or modify `configuration.yaml` file.
 
 ```python
-from deepspeech import load_model
-from deepspeech.configuration import Configuration
+from deepspeech import DeepSpeech
 
-deepspeech = load_model(name='polish-model.bin')
-deepspeech.configuration = Configuration('new-configuration.yaml')
-deepspeech.train()
-deepspeech.save('path/to/my_model.bin')
+deepspeech = DeepSpeech.from_configuration('/tuned-model/configuration.yaml')
+deepspeech.load_weights('pl')       # Raise error if different architecture is defined
+
+train_generator = deepspeech.create_generator('train.csv', batch_size=32)
+dev_generator = deepspeech.create_generator('dev.csv', batch_size=32)
+
+deepspeech.fit(train_generator, dev_generator, epochs=5)
+deepspeech.save('/tuned-model/weights.hdf5')
 ```
 
+### Creating new models
+If you have several GPU's and more than 500 hours labeled audio samples, you could start to create new models. 
+You can use [run.py](https://raw.githubusercontent.com/rolczynski/DeepSpeech-Keras/master/run.py) 
+script as a guideline. In configuration file you specify parameters for all six components:
 
-### Eager execution
-Eager execution makes development and debugging more interactive, e.g. you can check how 
-activations are changing. Be careful, not all Keras API methods have been already implemented.
-Few attempts were made but still the multi gpu support is problematic.
-Unfortunately the [Eager Execution](https://www.tensorflow.org/guide/eager) is not supported for the training. 
-However, there are available models which were converted to the eager mode after training. 
-
-```python
-import tensorflow as tf
-tf.enable_eager_execution()
-
-...
-deepspeech = load_model(name='polish-model-eager.bin')
-
-for layer in deepspeech.model.layers:
-    activation = layer(X)
-    ... # at the end you get y_hat
+```yaml
+alphabet:                 # text.py: Alphabet parameters (e.g. file_path)
+features_extractor:       # audio.py: FeatureExtractor parameters (e.g. win_len or win_step)
+model:                    # model.py: Model parameters (e.g. units)
+optimizer:                # deepspeech.optimizer: Optimizer parameters (e.g. name or lr)
+callbacks:                # callback.py: List of callback parameters (e.g tensorboard)
+decoder:                  # ctc_decoder.py: Decoder parameters (e.g. naive)
 ```
 
-
-## Creating new models
-If you have several GPU's and huge amount of data, you could start to create new models.
-Training uses the Tensorflow static Graph execution, mainly because it's easier to use with multi 
-GPU support. Keras code under TensorFlow was refactored (but not finished yet) 
-and in the future version this project will be switched to  `tf.keras`.
-
-### Experiments management
-The training often requires few attempts. You can use the `consumer.py` to run experiments 
-sequentially. Define your queue where you can specify base configuration file and custom
-parameters (like hyper-parameters), e.g.:
-```
-experiments/configuration.yaml|model.parameters.rnn_sizes=[1024,1024]|exp_dir="experiments/new rnns"
-```
-
-### Multi GPU support
-In this project we do data parallelism via [`multi_gpu_model`](https://keras.io/utils/#multi_gpu_model).
-The model is replicated to different GPUs and then results are merged back on the CPU. This induces 
-quasi-linear speedup on up to 8 GPUs. 
+For more details check default [configuration](https://raw.githubusercontent.com/rolczynski/DeepSpeech-Keras/master/models/pl/configuration.yaml) 
+for polish. Of course you don't have to use the configuration file. You can define all required dependencies 
+(decoder, model ect) and pass to the deepspeech _init_. Moreover each component can be replaced and you can pass your own objects.
 
 
-### Data generation
-The feature extraction (on CPU) is parallel to model training (on GPU). This 
-is done via [`fit_generator`](https://keras.io/utils/#fit_generator).
-
-However, the features should be cached and the multiprocessing can be turned off.
-
-
-### CuDNN support
-Model used during the training contains the fast LSTM implementation by 
-NVIDIA Developers. The computation performance improved significantly. 
-This is only available if you have NVIDIA GPU's.
-
-
-### Distributed training
-Folks rarely uses distributed training. Architecture that offers 
-this feature, often suffers from the boilerplate code. This project 
-can be extended to distributed system by more sophisticated tools 
-[Horovod](https://github.com/uber/horovod), 
-[Dist-Keras](https://github.com/cerndb/dist-keras)
-[TensorFlow Estimators](https://www.tensorflow.org/api_docs/python/tf/keras/estimator/model_to_estimator).
-You can also check out _Mozilla_ implementation.
-
+### Useful scripts
+In [scripts]() folder you can find e.g.:
+- `confusion_matrix.py`: Investigate what mistakes were made and plot results.
+- `consumer.py`: Manage between different experiments. Create a queue file and in each line write command line to execute.
+- `features.py`: Extract features and save them in the hdf5 file ready to use by DataGenerator.
+- `evaluate.py`: Script to do a model evaluation. Calculate WER, CER and different statistics.
 
 ## Pre-trained models
 The calculations are in progress.
@@ -156,16 +119,19 @@ The calculations are in progress.
 Amazing work was already done. Check out the implementations of
 [Mozilla DeepSpeech](https://github.com/mozilla/DeepSpeech) (TensorFlow), 
 [deepspeech.pytorch](https://github.com/SeanNaren/deepspeech.pytorch) (PyTorch) or 
-even [KerasDeepSpeech](https://github.com/robmsmt/KerasDeepSpeech) (Keras). 
-
-This project is complementary to projects listed above. It tries to be more
-user-friendly for the newcomer users. 
+even [KerasDeepSpeech](https://github.com/robmsmt/KerasDeepSpeech) (Keras).  This project is 
+complementary to projects listed above. It tries to be more user-friendly for the newcomer users. 
 
 
 ## Contributing
 Have a question? Like the tool? Don't like it? Open an issue and let's talk 
-about it! Pull requests are appreciated!
+about it! Pull requests are appreciated! Interesting fields to improve:
+- support for different languages (or e.g. import weights from DeepSpeech pre-trained model)
+- rewrite `keras` model into `tensorflow.keras`
+- implement [Eager Execution](https://www.tensorflow.org/guide/eager) to make a debugging more interactive
+- Seq2Seq model training with language model (+attention)
 
+<br>
 
-### The computational resource is available thanks to
+#### The computational resource is available thanks to:
 ![Usage](http://www.indopolishedu.com/wp-content/uploads/2018/03/polish.png)
