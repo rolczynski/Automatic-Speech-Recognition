@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 from typing import List
 
 
@@ -52,7 +53,7 @@ class Alphabet:
 
     def get_batch_labels(self, transcripts: List[str]) -> np.ndarray:
         """ Convert batch transcripts to labels """
-        batch_labels = [[self.label_from_string(c) for c in transcript]
+        batch_labels = [[self.label_from_string(c) for c in transcript if c in self]
                         for transcript in transcripts]
 
         max_len = max(map(len, batch_labels))
