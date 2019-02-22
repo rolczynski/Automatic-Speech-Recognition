@@ -6,14 +6,14 @@ import tensorflow as tf
 from typing import Callable
 from keras.backend import tensorflow_backend as K
 
-from source.text import Alphabet, get_batch_transcripts
+from source.text import Alphabet
 NEG_INF = -float("inf")
 
 
 def batch_tensorflow_decode(y_hat, decoder: Callable, alphabet: Alphabet):
     """ Enable to batch decode using tensorflow decoder. """
     labels, = decoder([y_hat])
-    return get_batch_transcripts(labels, alphabet)
+    return alphabet.get_batch_transcripts(labels)
 
 
 def get_tensorflow_decoder(output_tensor, beam_size=1024):
