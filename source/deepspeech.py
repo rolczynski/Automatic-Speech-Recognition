@@ -81,6 +81,11 @@ class DeepSpeech:
         return self.alphabet.get_batch_labels(transcripts)
 
 
+    def get_transcripts(self, labels: np.ndarray) -> List[str]:
+        """ Convert labels to transcripts. """
+        return self.alphabet.get_batch_transcripts(labels)
+
+
     def create_generator(self, file_path, source='from_audio_files', **kwargs) -> DataGenerator:
         """ Create generator from audio files (csv file) or prepared features (hdf5 file). """
         _create_generator = getattr(DataGenerator, source)
