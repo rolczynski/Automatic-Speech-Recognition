@@ -11,7 +11,7 @@ from keras.callbacks import Callback, TerminateOnNaN, LearningRateScheduler, His
 from keras.optimizers import Optimizer, SGD, Adam
 from keras.backend.tensorflow_backend import _get_available_gpus as get_available_gpus
 
-from source import audio, model, text, ctc_decoder, configuration
+from source import audio, model, text, ctc_decoder, configuration, utils
 from source.text import Alphabet
 from source.audio import FeaturesExtractor
 from source.generator import DataGenerator
@@ -118,7 +118,8 @@ class DeepSpeech:
     def load(self, language: str = None, path: str = None):
         """ Load model weights from the pretrained model. """
         if language:
-            path = os.path.join('models', language, 'weights.hdf5')
+            root_dir = utils.get_root_dir()
+            path = os.path.join(root_dir, 'models', language, 'weights.hdf5')
         self.model.load_weights(path)
 
 

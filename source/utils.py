@@ -9,13 +9,14 @@ def save(data, file_name):
         dill.dump(data, file)
 
 
+def get_root_dir():
+    import run
+    return os.path.dirname(run.__file__)
+
+
 def chdir(to='ROOT'):
     """ Change the current work directory. Easily it can be switched to the project ROOT."""
-    if to == 'ROOT':
-        import run
-        new_cwd = os.path.dirname(run.__file__)
-    else:
-        new_cwd = to
+    new_cwd = get_root_dir() if to == 'ROOT' else to
     os.chdir(new_cwd)
 
 
