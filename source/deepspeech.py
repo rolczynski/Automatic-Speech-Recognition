@@ -115,11 +115,9 @@ class DeepSpeech:
         self.model.save_weights(path)
 
 
-    def load(self, language: str = None, path: str = None):
+    @utils.pretrained_models
+    def load(self, path: str):
         """ Load model weights from the pretrained model. """
-        if language:
-            root_dir = utils.get_root_dir()
-            path = os.path.join(root_dir, 'models', language, 'weights.hdf5')
         self.model.load_weights(path)
 
 

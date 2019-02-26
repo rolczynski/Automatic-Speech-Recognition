@@ -1,6 +1,7 @@
 import dill
 import os
 import logging
+from typing import Callable
 
 
 def save(data, file_name):
@@ -35,3 +36,14 @@ def create_logger(file_path, level=20, name='deepspeech'):
     # handle all messages from logger (not set handler level)
     logger.addHandler(handler)
     return logger
+
+
+def pretrained_models(func: Callable):
+    pretrained = ['pl']
+
+    def wrapper(self, path: str):
+        if path in pretrained:
+            root_dir = get_root_dir()
+            path = os.path.join(root_dir, 'models', path, 'weights.hdf5')
+        return func(self, path)
+    return wrapper
