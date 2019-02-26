@@ -35,7 +35,7 @@ callbacks:
 - name: TerminateOnNaN
 
 - name: ResultKeeper
-  file_name: results.bin
+  file_path: results.bin
 
 - name: CustomModelCheckpoint
   log_dir: checkpoints

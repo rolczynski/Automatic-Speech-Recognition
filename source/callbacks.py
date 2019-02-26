@@ -11,10 +11,10 @@ logger = logging.getLogger('deepspeech')
 class ResultKeeper(Callback):
     """ Save evaluation result and log the processing results. """
 
-    def __init__(self, file_name):
+    def __init__(self, file_path):
         super().__init__()
         self.results = []
-        self.file_name = file_name
+        self.file_path = file_path
 
 
     def _set_up_new_batch(self, *_):
@@ -45,8 +45,8 @@ class ResultKeeper(Callback):
 
     def _save_results(self, *_):
         """ Save final results. """
-        save(self.results, self.file_name)
-        logger.info(f'Evaluation results saved in {self.file_name}')
+        save(self.results, self.file_path)
+        logger.info(f'Evaluation results saved in {self.file_path}')
 
     on_train_end = _save_results
 
