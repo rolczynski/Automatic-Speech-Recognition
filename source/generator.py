@@ -2,7 +2,6 @@ import h5py
 import numpy as np
 import pandas as pd
 from keras.utils import Sequence
-from source import audio, text
 from source.text import Alphabet
 from source.audio import FeaturesExtractor
 
