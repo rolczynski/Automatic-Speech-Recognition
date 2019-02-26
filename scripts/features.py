@@ -18,7 +18,7 @@ Sample = namedtuple('Sample', ['path', 'size', 'transcript', 'features'])
 
 def read_dataframes(audio_path: str, segmented_path=None):
     """ Read dataframes. """
-    audio_source = pd.read_csv(audio_path, usecols=['name', 'transcript'])
+    audio_source = pd.read_csv(audio_path, usecols=['path', 'transcript'])
     if segmented_path:
         cmt = pd.read_csv(segmented_path,
                           names=['sentence_id', 'nb', 'start', 'length', 'transcript'],
