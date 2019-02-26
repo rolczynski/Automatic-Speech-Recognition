@@ -24,7 +24,7 @@ def parse_arguments():
 def fit(args):
     deepspeech = DeepSpeech.from_configuration(file_path=args.configuration)
     if args.pretrained:
-        deepspeech.load_weights(path=args.pretrained)
+        deepspeech.load(path=args.pretrained)
 
     train_generator = deepspeech.create_generator(args.train, batch_size=args.batch_size, source=args.source,
                                                   shuffle_after_epoch=args.shuffle_after_epoch)

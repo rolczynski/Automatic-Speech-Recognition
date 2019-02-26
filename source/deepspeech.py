@@ -110,16 +110,16 @@ class DeepSpeech:
         return self.decoder(y_hat)
 
 
-    def load_weights(self, language: str = None, path: str = None):
+    def save(self, path: str):
+        """ Save model weights. Object can be easily reinitialized. """
+        self.model.save_weights(path)
+
+
+    def load(self, language: str = None, path: str = None):
         """ Load model weights from the pretrained model. """
         if language:
             path = os.path.join('models', language, 'weights.hdf5')
         self.model.load_weights(path)
-
-
-    def save(self, path: str):
-        """ Save model weights. Object can be easily reinitialized. """
-        self.model.save_weights(path)
 
 
     @staticmethod
