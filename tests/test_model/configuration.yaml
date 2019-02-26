@@ -1,0 +1,48 @@
+
+alphabet:
+  file_path: test_model/alphabet.txt
+
+features_extractor:
+  numcep: 26
+  winlen: 0.032
+  winstep: 0.02
+  winfunc: hamming
+
+model:
+  name: deepspeech
+  units: 16
+
+optimizer:
+  name: adam
+  lr: 0.001
+  beta_1: 0.9
+  beta_2: 0.999
+  epsilon: 0.00000001
+
+callbacks:
+- name: TerminateOnNaN
+
+- name: ResultKeeper
+  file_path: test_model/results.bin
+
+- name: CustomModelCheckpoint
+  log_dir: test_model/checkpoints
+
+- name: CustomTensorBoard
+  log_dir: test_model/tensorboard
+
+- name: LearningRateScheduler
+  # Around 8% at epoch 25
+  k: 0.1
+  verbose: 1
+
+- name: CustomEarlyStopping
+  mini_targets:
+    5: 200
+    10: 100
+  monitor: val_loss
+  patience: 3
+
+decoder:
+  name: tensorflow
+  beam_size: 128
