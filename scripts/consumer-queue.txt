@@ -1,1 +1,0 @@
-run.py --configuration models/pl/configuration.yaml --home_directory models/test --train data/train/features.hdf5 --dev data/train/features.hdf5 --source from_prepared_features --batch_size 128 --epochs 25
