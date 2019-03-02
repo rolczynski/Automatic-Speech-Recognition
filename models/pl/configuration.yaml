@@ -1,10 +1,4 @@
 
-# Describe valid chars used to convert transcript into sequence of
-# labels and vice versa.
-alphabet:
-  file_path: models/pl/alphabet.txt
-
-
 # Define how audio files are processing.
 features_extractor:
   numcep: 26
@@ -16,7 +10,7 @@ features_extractor:
 # Custom architecture can be created using `deepspeech-custom`.
 model:
   name: deepspeech
-  units: 2048
+  units: 64
 
 
 # The available optimizers are specified in: `get_optimizer` and
@@ -35,13 +29,13 @@ callbacks:
 - name: TerminateOnNaN
 
 - name: ResultKeeper
-  file_path: results.bin
+  file_name: results.bin
 
 - name: CustomModelCheckpoint
-  log_dir: checkpoints
+  dir_name: checkpoints
 
 - name: CustomTensorBoard
-  log_dir: tensorboard
+  dir_name: tensorboard
 
 - name: LearningRateScheduler
   # Around 8% at epoch 25
@@ -59,4 +53,4 @@ callbacks:
 # Define method of decoding probabilities into transcription
 decoder:
   name: tensorflow
-  beam_size: 1024
+  beam_size: 64

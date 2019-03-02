@@ -47,17 +47,18 @@ class DeepSpeech:
 
 
     @classmethod
-    def from_configuration(cls, file_path: str) -> 'DeepSpeech':
-        """ Create DeepSpeech object base on the configuration file. """
-        config = Configuration(file_path)
+    def construct(cls, config_path: str, alphabet_path: str) -> 'DeepSpeech':
+        """ Construct DeepSpeech object base on the configuration and the alphabet files. """
+        config = Configuration(config_path)
+        model_dir = os.path.dirname(config_path)
         gpus = get_available_gpus()
 
         model = cls.get_model(is_gpu=len(gpus) > 0, **config.model)
         loss = cls.get_loss()
         optimizer = cls.get_optimizer(**config.optimizer)
-        callbacks = cls.get_callbacks(config.callbacks)
+        callbacks = cls.get_callbacks(home_dir=model_dir, configurations=config.callbacks)
 
-        alphabet = cls.get_alphabet(**config.alphabet)
+        alphabet = cls.get_alphabet(alphabet_path)
         features_extractor = cls.get_features_extractor(**config.features_extractor)
         decoder = cls.get_decoder(alphabet=alphabet, model=model, **config.decoder)
         return cls(model, loss, optimizer, callbacks, alphabet, decoder, features_extractor, gpus)
@@ -110,15 +111,15 @@ class DeepSpeech:
         return self.decoder(y_hat)
 
 
-    def save(self, path: str):
+    def save(self, file_path: str):
         """ Save model weights. Object can be easily reinitialized. """
-        self.model.save_weights(path)
+        self.model.save_weights(file_path)
 
 
     @utils.pretrained_models
-    def load(self, path: str):
+    def load(self, file_path: str):
         """ Load model weights from the pretrained model. """
-        self.model.load_weights(path)
+        self.model.load_weights(file_path)
 
 
     @staticmethod
@@ -134,7 +135,7 @@ class DeepSpeech:
 
 
     @staticmethod
-    def get_configuration(file_path: str):
+    def get_configuration(file_path: str) -> Configuration:
         """ Read components parameters from the yaml file via Configuration object. """
         return configuration.Configuration(file_path)
 
@@ -150,9 +151,9 @@ class DeepSpeech:
 
 
     @staticmethod
-    def get_alphabet(**kwargs) -> Alphabet:
+    def get_alphabet(file_path) -> Alphabet:
         """ Alphabet consists all valid characters / phonemes and helps work with texts. """
-        return text.Alphabet(**kwargs)
+        return text.Alphabet(file_path)
 
 
     @staticmethod
@@ -197,7 +198,7 @@ class DeepSpeech:
 
 
     @staticmethod
-    def get_callbacks(configurations: list) -> List[Callback]:
+    def get_callbacks(home_dir: str, configurations: list) -> List[Callback]:
         """ Define callbacks to get a view on internal states during training. """
         callbacks = []
         for configuration in configurations:
@@ -207,7 +208,8 @@ class DeepSpeech:
                 callbacks.append(TerminateOnNaN())
 
             elif name == 'ResultKeeper':
-                callbacks.append(ResultKeeper(**configuration))
+                file_path = os.path.join(home_dir, configuration.pop('file_name'))
+                callbacks.append(ResultKeeper(file_path))
 
             elif name == 'CustomEarlyStopping':
                 callbacks.append(CustomEarlyStopping(**configuration))
@@ -218,8 +220,10 @@ class DeepSpeech:
                 callbacks.append(LearningRateScheduler(step_decay, **configuration))
 
             elif name == 'CustomModelCheckpoint':
-                callbacks.append(CustomModelCheckpoint(**configuration))
+                log_dir = os.path.join(home_dir, configuration.pop('dir_name'))
+                callbacks.append(CustomModelCheckpoint(log_dir))
 
             elif name == 'CustomTensorBoard':
-                callbacks.append(CustomTensorBoard(**configuration))
+                log_dir = os.path.join(home_dir, configuration.pop('dir_name'))
+                callbacks.append(CustomTensorBoard(log_dir))
         return callbacks

@@ -75,7 +75,7 @@ class CustomModelCheckpoint(Callback):
         val_loss = logs.get('val_loss')
         name = f'weights.{epoch + 1:02d}-{val_loss:.2f}.hdf5'
         file_path = os.path.join(self.log_dir, name)
-        self.model.template_model.save_weights(file_path, overwrite=True)
+        self.model.template_model.save(file_path, overwrite=True)
         if val_loss < self.best_result:
             self.best_result = val_loss
             self.best_weights_path = file_path

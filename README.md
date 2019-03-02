@@ -75,8 +75,9 @@ they are ready to use. All you have to do is to create new or modify `configurat
 ```python
 from deepspeech import DeepSpeech
 
-deepspeech = DeepSpeech.from_configuration('/tuned-model/configuration.yaml')
-deepspeech.load_weights('pl')       # Raise error if different architecture is defined
+deepspeech = DeepSpeech.construct('/tuned-model/configuration.yaml',
+                                  '/tuned-model/alphabet.txt')
+deepspeech.load('pl')       # Raise error if different architecture is defined
 
 train_generator = deepspeech.create_generator('train.csv', batch_size=32)
 dev_generator = deepspeech.create_generator('dev.csv', batch_size=32)
@@ -88,10 +89,9 @@ deepspeech.save('/tuned-model/weights.hdf5')
 ### Creating new models
 If you have several GPU's and more than 500 hours labeled audio samples, you could start to create new models. 
 You can use [run.py](https://raw.githubusercontent.com/rolczynski/DeepSpeech-Keras/master/run.py) 
-script as a guideline. In configuration file you specify parameters for all six components:
+script as a guideline. In configuration file you specify parameters for all five components:
 
 ```yaml
-alphabet:                 # text.py: Alphabet parameters (e.g. file_path)
 features_extractor:       # audio.py: FeatureExtractor parameters (e.g. win_len or win_step)
 model:                    # model.py: Model parameters (e.g. units)
 optimizer:                # deepspeech.optimizer: Optimizer parameters (e.g. name or lr)

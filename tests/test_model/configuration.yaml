@@ -1,17 +1,20 @@
 
-alphabet:
-  file_path: test_model/alphabet.txt
-
+# Define how audio files are processing.
 features_extractor:
   numcep: 26
   winlen: 0.032
   winstep: 0.02
   winfunc: hamming
 
+
+# Custom architecture can be created using `deepspeech-custom`.
 model:
   name: deepspeech
-  units: 16
+  units: 64
 
+
+# The available optimizers are specified in: `get_optimizer` and
+# come from `keras.optimizers` module.
 optimizer:
   name: adam
   lr: 0.001
@@ -19,17 +22,20 @@ optimizer:
   beta_2: 0.999
   epsilon: 0.00000001
 
+
+# Set callbacks to get a view on internal states and statistics of the model
+# during training.
 callbacks:
 - name: TerminateOnNaN
 
 - name: ResultKeeper
-  file_path: test_model/results.bin
+  file_name: results.bin
 
 - name: CustomModelCheckpoint
-  log_dir: test_model/checkpoints
+  dir_name: checkpoints
 
 - name: CustomTensorBoard
-  log_dir: test_model/tensorboard
+  dir_name: tensorboard
 
 - name: LearningRateScheduler
   # Around 8% at epoch 25
@@ -43,6 +49,8 @@ callbacks:
   monitor: val_loss
   patience: 3
 
+
+# Define method of decoding probabilities into transcription
 decoder:
   name: tensorflow
-  beam_size: 128
+  beam_size: 64

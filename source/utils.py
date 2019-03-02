@@ -1,16 +1,17 @@
 import dill
 import os
 import logging
-from typing import Callable
+from logging import Logger
+from typing import Callable, Any
 
 
-def save(data, file_name):
+def save(data: Any, file_name: str):
     """ Save arbitrary data in the file. """
     with open(file_name, mode='wb') as file:
         dill.dump(data, file)
 
 
-def get_root_dir():
+def get_root_dir() -> str:
     import run
     return os.path.dirname(run.__file__)
 
@@ -21,7 +22,7 @@ def chdir(to='ROOT'):
     os.chdir(new_cwd)
 
 
-def create_logger(file_path, level=20, name='deepspeech'):
+def create_logger(file_path, level=20, name='deepspeech') -> Logger:
     """ Create the logger with default"""
     logger = logging.getLogger(name)
     logger.setLevel(level)
@@ -38,12 +39,38 @@ def create_logger(file_path, level=20, name='deepspeech'):
     return logger
 
 
-def pretrained_models(func: Callable):
-    pretrained = ['pl']
+def get_pretrained_model_dir(name: str) -> str:
+    pretrained_models = ['pl']
+    if name in pretrained_models:
+        root_dir = get_root_dir()
+        model_dir = os.path.join(root_dir, 'models', name)
+        return model_dir
+    raise ValueError('Not valid pretrained model')
 
-    def wrapper(self, path: str):
-        if path in pretrained:
-            root_dir = get_root_dir()
-            path = os.path.join(root_dir, 'models', path, 'weights.hdf5')
-        return func(self, path)
-    return wrapper
+
+def load(name: str):
+    from deepspeech import DeepSpeech
+    if os.path.isdir(name):
+        model_dir = name
+    else:
+        model_dir = get_pretrained_model_dir(name)
+
+    config_path = os.path.join(model_dir, 'configuration.yaml')
+    alphabet_path = os.path.join(model_dir, 'alphabet.txt')
+    weights_path = os.path.join(model_dir, 'weights.hdf5')
+
+    deepspeech = DeepSpeech.construct(config_path, alphabet_path)
+    deepspeech.load(weights_path)
+    return deepspeech
+
+
+def pretrained_models(func: Callable) -> Callable:
+
+    def load_wrapper(deepspeech, file_path: str):
+        if os.path.isfile(file_path):
+            weights_path = file_path
+        else:
+            model_dir = get_pretrained_model_dir(file_path)
+            weights_path = os.path.join(model_dir, 'weights.hdf5')
+        return func(deepspeech, weights_path)
+    return load_wrapper

@@ -1,3 +1,4 @@
+import os
 import pytest
 import numpy as np
 import warnings
@@ -7,12 +8,27 @@ from deepspeech import DeepSpeech
 
 
 @pytest.fixture
-def config():
-    return DeepSpeech.get_configuration('test_model/configuration.yaml')
+def config_path():
+    return 'test_model/configuration.yaml'
+
+
+@pytest.fixture
+def alphabet_path():
+    return 'test_model/alphabet.txt'
+
+
+@pytest.fixture
+def config(config_path):
+    return DeepSpeech.get_configuration(config_path)
+
+
+@pytest.fixture
+def alphabet(alphabet_path):
+    return DeepSpeech.get_alphabet(alphabet_path)
 
 
 def test_config(config):
-    required_attrs = ['alphabet', 'features_extractor', 'model', 'callbacks', 'optimizer', 'decoder']
+    required_attrs = ['features_extractor', 'model', 'callbacks', 'optimizer', 'decoder']
     assert all(hasattr(config, attr) for attr in required_attrs)
 
 
@@ -22,27 +38,20 @@ def test_get_model(config):
     assert type(model) == Model
 
 
-def test_get_alphabet(config):
-    from deepspeech import Alphabet
-    alphabet = DeepSpeech.get_alphabet(**config.alphabet)
-    assert type(alphabet) == Alphabet
-
-
 def test_get_features_extractor(config):
     from deepspeech import FeaturesExtractor
     features_extractor = DeepSpeech.get_features_extractor(**config.features_extractor)
     assert type(features_extractor) == FeaturesExtractor
 
 
-def test_get_decoder(config):
-    alphabet = DeepSpeech.get_alphabet(**config.alphabet)
+def test_get_decoder(config, alphabet):
     model = DeepSpeech.get_model(**config.model, is_gpu=False)
     decoder = DeepSpeech.get_decoder(alphabet=alphabet, model=model, **config.decoder)
     assert callable(decoder)
 
 
 def test_get_callbacks(config):
-    callbacks = DeepSpeech.get_callbacks(config.callbacks)
+    callbacks = DeepSpeech.get_callbacks(home_dir='test_model', configurations=config.callbacks)
     assert len(callbacks) == 6
 
 
@@ -55,8 +64,8 @@ def test_compile_model(config):
 
 
 @pytest.fixture
-def deepspeech(config):
-    return DeepSpeech.from_configuration('test_model/configuration.yaml')
+def deepspeech(config_path, alphabet_path):
+    return DeepSpeech.construct(config_path, alphabet_path)
 
 
 @pytest.fixture
@@ -120,16 +129,20 @@ def test_decode():
 def test_save_load(deepspeech):
     is_same = lambda A, B: all(np.array_equal(a, b) for a, b in zip(A, B))
 
-    file_path = 'test_model/weights.hdf5'
-    deepspeech.save(file_path)
-    deepspeech_weights = deepspeech.model.get_weights()
+    model_dir = 'test_model'
+    config_path = os.path.join(model_dir, 'configuration.yaml')
+    alphabet_path = os.path.join(model_dir, 'alphabet.txt')
+    weights_path = os.path.join(model_dir, 'weights.hdf5')
 
-    new_deepspeech = DeepSpeech.from_configuration('test_model/configuration.yaml')
+    deepspeech_weights = deepspeech.model.get_weights()
+    deepspeech.save(weights_path)
+
+    new_deepspeech = DeepSpeech.construct(config_path, alphabet_path)
     new_deepspeech_weights = new_deepspeech.model.get_weights()
 
     assert not is_same(deepspeech_weights, new_deepspeech_weights)
 
-    new_deepspeech.load(file_path)
+    new_deepspeech.load(weights_path)
     new_deepspeech_weights = new_deepspeech.model.get_weights()
     assert is_same(deepspeech_weights, new_deepspeech_weights)
 
@@ -158,3 +171,14 @@ def test_end():
     os.mkdir('test_model')
     os.rename('alphabet.txt', 'test_model/alphabet.txt')
     os.rename('configuration.yaml', 'test_model/configuration.yaml')
+
+
+def test_utils_load():
+    from utils import load, get_root_dir
+    deepspeech = load('pl')                                 # Call via: model name
+    assert type(deepspeech) == DeepSpeech
+
+    root_dir = get_root_dir()
+    model_dir = os.path.join(root_dir, 'models', 'pl')
+    deepspeech_dir = load(model_dir)                        # or model directory
+    assert type(deepspeech_dir) == DeepSpeech
