@@ -110,10 +110,29 @@ def generator(deepspeech):
     return deepspeech.create_generator(file_path='test_data/features.hdf5', source='from_prepared_features', batch_size=5)
 
 
-def test_fit(deepspeech, generator):
+def test_fit(deepspeech, generator, config_path, alphabet_path):
     from deepspeech import History
-    history = deepspeech.fit(train_generator=generator, dev_generator=generator, epochs=1)
+
+    # Test save best weights (overwrite the best result)
+    deepspeech.save('test_model/test_weights.hdf5')
+    distributed_weights = deepspeech.distributed_model.get_weights()
+    model_checkpoint = deepspeech.callbacks[2]
+    model_checkpoint.best_result = 0
+    model_checkpoint.best_weights_path = 'test_model/test_weights.hdf5'
+
+    history = deepspeech.fit(train_generator=generator, dev_generator=generator, epochs=2)
     assert type(history) == History
+
+    # Test the returned model has `test_weights`
+    deepspeech_weights = deepspeech.model.get_weights()
+    new_deepspeech = DeepSpeech.construct(config_path, alphabet_path)
+    new_deepspeech.load(model_checkpoint.best_weights_path)
+    new_deepspeech_weights = new_deepspeech.model.get_weights()
+    assert is_same(deepspeech_weights, new_deepspeech_weights)
+
+    # Test that distributed model appropriate update weights
+    new_distributed_weights = deepspeech.distributed_model.get_weights()
+    assert is_same(distributed_weights, new_distributed_weights)
 
 
 def test_predict():
@@ -148,8 +167,6 @@ def test_save_load(deepspeech):
 
 
 def test_load_pretrained_models(deepspeech):
-    is_same = lambda A, B: all(np.array_equal(a, b) for a, b in zip(A, B))
-
     deepspeech_weights = deepspeech.model.get_weights()
     deepspeech.load('pl')
     new_deepspeech_weights = deepspeech.model.get_weights()
@@ -160,6 +177,17 @@ def test_call(deepspeech, audio_file_paths):
     # sentences = deepspeech(audio_file_paths)
     # assert len(sentences) == 2
     pass
+
+
+def test_utils_load():
+    from utils import load, get_root_dir
+    deepspeech = load('pl')                                 # Call via: model name
+    assert type(deepspeech) == DeepSpeech
+
+    root_dir = get_root_dir()
+    model_dir = os.path.join(root_dir, 'models', 'pl')
+    deepspeech_dir = load(model_dir)                        # or model directory
+    assert type(deepspeech_dir) == DeepSpeech
 
 
 def test_end():
@@ -173,12 +201,4 @@ def test_end():
     os.rename('configuration.yaml', 'test_model/configuration.yaml')
 
 
-def test_utils_load():
-    from utils import load, get_root_dir
-    deepspeech = load('pl')                                 # Call via: model name
-    assert type(deepspeech) == DeepSpeech
-
-    root_dir = get_root_dir()
-    model_dir = os.path.join(root_dir, 'models', 'pl')
-    deepspeech_dir = load(model_dir)                        # or model directory
-    assert type(deepspeech_dir) == DeepSpeech
+is_same = lambda A, B: all(np.array_equal(a, b) for a, b in zip(A, B))
