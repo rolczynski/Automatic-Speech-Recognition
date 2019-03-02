@@ -12,8 +12,7 @@ class Configuration:
         """ All parameters saved in .yaml file convert to dot accessible """
         self._file_path = file_path
         self._data = self._read_yaml_file()
-        self._check_file(required_keys=['alphabet', 'features_extractor', 'model', 'callbacks', 'optimizer', 'decoder'])
-        self.alphabet = self._data.get('alphabet')
+        self._check_file(required_keys=['features_extractor', 'model', 'callbacks', 'optimizer', 'decoder'])
         self.features_extractor = self._data.get('features_extractor')
         self.model = self._data.get('model')
         self.callbacks = self._data.get('callbacks')
