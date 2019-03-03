@@ -106,7 +106,7 @@ def main(store_path: str, audio_path: str, ctm_path: str, max_words: int, **mfcc
     available_workers = cpu_count()
     with h5py.File(store_path, mode='w') as store, Pool(processes=available_workers) as pool:
 
-        iterator_len = len(audio) // available_workers // 100
+        iterator_len = len(audio) // available_workers // 500   # This number can be reduce if the RAM is a limitation
         iterator = np.array_split(audio, iterator_len)
 
         for chunk in tqdm(iterator):
