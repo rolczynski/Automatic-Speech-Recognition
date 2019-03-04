@@ -30,9 +30,9 @@ def run_consumer(queue):
     while True:
         try:
             command = next_in(queue)
-            logger.info(f'Program execute the command: {command}')
 
             if command:
+                logger.info(f'Program execute the command: {command}')
                 execute(command)
                 logger.info(f'Correct run: {command}')
             else:
