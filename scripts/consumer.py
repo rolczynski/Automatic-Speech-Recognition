@@ -22,10 +22,7 @@ def next_in(file_name):
 def execute(command):
     """ Execute a python script and waits for it to finish (security issue). """
     handler, = logger.handlers
-    try:
-        subprocess.run(f'{args.python} {command}'.split(), stderr=handler.stream, cwd=os.getcwd(), check=True)
-    except subprocess.CalledProcessError:
-        logger.error(f'Program can not execute the command: {command}')
+    subprocess.run(f'{args.python} {command}'.split(), stderr=handler.stream, cwd=os.getcwd(), check=True)
 
 
 def run_consumer(queue):
@@ -33,14 +30,16 @@ def run_consumer(queue):
     while True:
         try:
             command = next_in(queue)
+            logger.info(f'Program execute the command: {command}')
+
             if command:
                 execute(command)
                 logger.info(f'Correct run: {command}')
             else:
                 time.sleep(10)
 
-        except Exception as e:   # Handle all exceptions
-            logger.exception("Exception occurred in the run_consumer")
+        except subprocess.CalledProcessError:
+            logger.error(f'Program can not execute the command')
 
 
 if __name__ == "__main__":
