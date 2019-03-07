@@ -21,7 +21,7 @@ def parse_arguments():
 
 def main(args):
     deepspeech = DeepSpeech.construct(config_path=config_path, alphabet_path=alphabet_path)
-    if args.pretrained_model_dir:
+    if args.pretrained_weights:
         deepspeech.load(args.pretrained_weights)
 
     train_generator = deepspeech.create_generator(args.train, batch_size=args.batch_size, source=args.source,
