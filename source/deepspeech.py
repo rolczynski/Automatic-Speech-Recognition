@@ -216,8 +216,8 @@ class DeepSpeech:
 
             elif name == 'LearningRateScheduler':
                 k = configuration.pop('k')
-                step_decay = lambda epoch, lr: lr*exp(-epoch*k)
-                callbacks.append(LearningRateScheduler(step_decay, **configuration))
+                lr_decay = lambda epoch, lr: lr/np.power(k, epoch)
+                callbacks.append(LearningRateScheduler(lr_decay, **configuration))
 
             elif name == 'CustomModelCheckpoint':
                 log_dir = os.path.join(home_dir, configuration.pop('dir_name'))
