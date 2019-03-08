@@ -15,6 +15,7 @@ def available_gpus():
         tf.test.is_gpu_available()
         return True
     except tf.errors.InternalError:
+        logger.info('GPUs are not available')
         return False
 
 
