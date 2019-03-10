@@ -8,17 +8,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 from source.utils import chdir, create_logger
 
 
-def available_gpus():
-    """ Check if all defined GPUs are ready to use. """
-    import tensorflow as tf
-    try:
-        tf.test.is_gpu_available()
-        return True
-    except tf.errors.InternalError:
-        logger.info('GPUs are not available')
-        return False
-
-
 def next_in(file_name):
     """ Get the first file line - truncate to the current pointer position."""
     with open(file_name, "r+") as f:
@@ -39,11 +28,6 @@ def execute(command):
 def run_consumer(queue):
     """ Run program in the infinite loop (a daemon process). """
     while True:
-
-        if not available_gpus():
-            time.sleep(60)
-            continue
-
         try:
             command = next_in(queue)
 
