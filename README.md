@@ -23,18 +23,18 @@ quasi-linear speedup on up to 8 GPUs.
 - **CuDNN support**: Model using [CuDNNLSTM](https://keras.io/layers/recurrent/) implementation by NVIDIA Developers. CPU devices is also supported.
 - **DataGenerator**: The feature extraction (on CPU) can be parallel to model training (on GPU). Moreover it can 
 use precomputed features saved in a hdf5 file. 
+echo ". /home/rolczynski/.anaconda3/etc/profile.d/conda.sh" >> ~/.bashrc
 
 ## Installation
-You can use pip:
+You can use pip (not prepared yet):
 ```bash
 pip install deepspeech-keras
 ```
-
-Otherwise create a new environment, clone the code and install requirements:
+Otherwise clone the code and create a new environment via conda:
 ```bash
-python3 -m venv /path/to/new/virtual/environment
 git clone https://github.com/rolczynski/DeepSpeech-Keras.git
-pip install -r requirements.txt
+conda env create -f=environment.yml     # or use: environment-gpu.yml
+conda activate DeepSpeech-Keras
 ```
 
 ## Getting started

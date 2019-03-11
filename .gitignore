@@ -9,3 +9,4 @@
 
 # Do not include models
 *.bin
+/out
