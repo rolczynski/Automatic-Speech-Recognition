@@ -30,7 +30,7 @@ You can use pip (not prepared yet):
 ```bash
 pip install deepspeech-keras
 ```
-Otherwise clone the code and create a new environment via conda:
+Otherwise clone the code and create a new environment via [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#):
 ```bash
 git clone https://github.com/rolczynski/DeepSpeech-Keras.git
 conda env create -f=environment.yml     # or use: environment-gpu.yml
