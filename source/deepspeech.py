@@ -1,13 +1,12 @@
 import os
 import numpy as np
 import tensorflow as tf
-from math import exp
 from functools import partial
 from typing import List, Callable
 from keras import Model
 from keras.layers import Input
 from keras.utils import multi_gpu_model
-from keras.callbacks import Callback, TerminateOnNaN, LearningRateScheduler, History
+from keras.callbacks import Callback, TerminateOnNaN, LearningRateScheduler, ReduceLROnPlateau, History
 from keras.optimizers import Optimizer, SGD, Adam
 from keras.backend.tensorflow_backend import _get_available_gpus as get_available_gpus
 
@@ -218,6 +217,9 @@ class DeepSpeech:
                 k = configuration.pop('k')
                 lr_decay = lambda epoch, lr: lr/np.power(k, epoch)
                 callbacks.append(LearningRateScheduler(lr_decay, **configuration))
+
+            elif name == 'ReduceLROnPlateau':
+                callbacks.append(ReduceLROnPlateau(**configuration))
 
             elif name == 'CustomModelCheckpoint':
                 log_dir = os.path.join(home_dir, configuration.pop('dir_name'))
