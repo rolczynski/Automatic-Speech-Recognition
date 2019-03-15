@@ -17,7 +17,7 @@ model:
 # come from `keras.optimizers` module.
 optimizer:
   name: adam
-  lr: 0.001
+  lr: 0.01
   beta_1: 0.9
   beta_2: 0.999
   epsilon: 0.00000001
@@ -37,17 +37,25 @@ callbacks:
 - name: CustomTensorBoard
   dir_name: tensorboard
 
-- name: LearningRateScheduler
-  # Around 8% at epoch 25
-  k: 0.1
+#- name: LearningRateScheduler
+#  # Around 8% at epoch 25
+#  k: 0.1
+#  verbose: 1
+
+- name: ReduceLROnPlateau
+  factor: 0.5
   verbose: 1
+  patience: 2
+  monitor: val_loss
+  min_delta: 0.1
+  min_lr: 0.000001   # 1E-6
+
 
 - name: CustomEarlyStopping
   mini_targets:
-    5: 200
-    10: 100
+    5: 100
+  patience: 2
   monitor: val_loss
-  patience: 3
 
 
 # Define method of decoding probabilities into transcription
