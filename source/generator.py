@@ -89,7 +89,8 @@ class DataGenerator(Sequence):
 
 
     def on_epoch_end(self):
-        """ Invoke methods at the end of the each epoch. """
+        """ Invoke methods at the end of the each epoch. The fit method should have: `shuffle=False`.
+        Keras OrderedEnqueuer seems to run on async on two threads so the epoch number is counted twice (bug). """
         self.epoch += 1
         self._shuffle_indices()
 
