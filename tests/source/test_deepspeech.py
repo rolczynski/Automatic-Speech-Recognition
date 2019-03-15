@@ -7,16 +7,22 @@ warnings.simplefilter("ignore", category=DeprecationWarning)    # Tensorflow war
 from typing import List
 from keras.engine.training import Model
 from deepspeech import DeepSpeech, Configuration, FeaturesExtractor, Alphabet, DataGenerator, History
+is_same = lambda A, B: all(np.array_equal(a, b) for a, b in zip(A, B))
 
 
 @pytest.fixture
-def config_path() -> str:
-    return 'test_model/configuration.yaml'
+def model_dir() -> str:
+    return 'tests/models/test/'
 
 
 @pytest.fixture
-def alphabet_path() -> str:
-    return 'test_model/alphabet.txt'
+def config_path(model_dir: str) -> str:
+    return os.path.join(model_dir, 'configuration.yaml')
+
+
+@pytest.fixture
+def alphabet_path(model_dir: str) -> str:
+    return os.path.join(model_dir, 'alphabet.txt')
 
 
 @pytest.fixture
@@ -52,8 +58,8 @@ def test_get_decoder(config: Configuration, alphabet: Alphabet):
     assert callable(decoder)
 
 
-def test_get_callbacks(config: Configuration):
-    callbacks = DeepSpeech.get_callbacks(home_dir='test_model', configurations=config.callbacks)
+def test_get_callbacks(model_dir: str, config: Configuration):
+    callbacks = DeepSpeech.get_callbacks(home_dir=model_dir, configurations=config.callbacks)
     assert len(callbacks) == 6
 
 
@@ -72,12 +78,12 @@ def deepspeech(config_path: str, alphabet_path: str) -> DeepSpeech:
 
 @pytest.fixture
 def audio_file_paths() -> List[str]:
-    return ['test_data/audio/0000.wav', 'test_data/audio/0001.wav']
+    return ['tests/data/audio/sent000.wav', 'tests/data/audio/sent001.wav']
 
 
 def test_get_features(deepspeech: DeepSpeech, audio_file_paths: List[str]):
     features = deepspeech.get_features(audio_file_paths)
-    assert features.shape == (2, 132, 26)
+    assert features.shape == (2, 739, 26)
 
 
 def test_get_labels_and_get_transcripts(deepspeech: DeepSpeech):
@@ -92,35 +98,36 @@ def test_get_labels_and_get_transcripts(deepspeech: DeepSpeech):
 
 
 def test_create_generator_from_audio_files(deepspeech: DeepSpeech):
-    generator = deepspeech.create_generator(file_path='test_data/audio.csv', source='from_audio_files', batch_size=5)
+    generator = deepspeech.create_generator(file_path='tests/data/audio.csv', source='from_audio_files', batch_size=2)
     assert len(generator) == 2
     X, y = generator[0]
-    assert X.shape == (5, 180, 26)
-    assert y.shape == (5, 44)
+    assert X.shape == (2, 739, 26)
+    assert y.shape == (2, 206)
 
 
 def test_create_generator_from_prepared_features(deepspeech: DeepSpeech):
-    generator = deepspeech.create_generator(file_path='test_data/features.hdf5', source='from_prepared_features', batch_size=5)
-    assert len(generator) == 2
+    generator = deepspeech.create_generator(file_path='tests/data/features.hdf5', source='from_prepared_features', batch_size=2)
+    assert len(generator) == 6
     X, y = generator[0]
-    assert X.shape == (5, 278, 26)
-    assert y.shape == (5, 28)
+    assert X.shape == (2, 93, 26)
+    assert y.shape == (2, 39)
 
 
 @pytest.fixture
 def generator(deepspeech: DeepSpeech) -> DataGenerator:
-    return deepspeech.create_generator(file_path='test_data/features.hdf5', source='from_prepared_features', batch_size=5)
+    return deepspeech.create_generator(file_path='tests/data/features.hdf5', source='from_prepared_features', batch_size=2)
 
 
-def test_fit(deepspeech: DeepSpeech, generator: DataGenerator, config_path: str, alphabet_path: str):
+def test_fit(deepspeech: DeepSpeech, generator: DataGenerator, config_path: str, alphabet_path: str, model_dir: str):
     # Test save best weights (overwrite the best result)
-    deepspeech.save('test_model/test_weights.hdf5')
+    weights_path = os.path.join(model_dir, 'weights_copy.hdf5')
+    deepspeech.save(weights_path)
     distributed_weights = deepspeech.distributed_model.get_weights()
     model_checkpoint = deepspeech.callbacks[2]
     model_checkpoint.best_result = 0
-    model_checkpoint.best_weights_path = 'test_model/test_weights.hdf5'
+    model_checkpoint.best_weights_path = weights_path
 
-    history = deepspeech.fit(train_generator=generator, dev_generator=generator, epochs=2)
+    history = deepspeech.fit(train_generator=generator, dev_generator=generator, epochs=2, shuffle=False)
     assert type(history) == History
 
     # Test the returned model has `test_weights`
@@ -145,8 +152,8 @@ def test_decode():
     pass
 
 
-def test_save_load(deepspeech: DeepSpeech, config: Configuration, config_path: str, alphabet_path: str):
-    weights_path = os.path.join('test_model', 'weights.hdf5')
+def test_save_load(deepspeech: DeepSpeech, config: Configuration, config_path: str, alphabet_path: str, model_dir: str):
+    weights_path = os.path.join(model_dir, 'weights.hdf5')
     model_weights = deepspeech.model.get_weights()
     deepspeech.save(weights_path)
 
@@ -166,25 +173,11 @@ def test_call(deepspeech: DeepSpeech, audio_file_paths: List[str]):
     pass
 
 
-def test_utils_load():
-    from utils import load, get_root_dir
-    deepspeech = load('pl')                                 # Call via: model name
-    assert type(deepspeech) == DeepSpeech
-
-    root_dir = get_root_dir()
-    model_dir = os.path.join(root_dir, 'models', 'pl')
-    deepspeech_dir = load(model_dir)                        # or model directory
-    assert type(deepspeech_dir) == DeepSpeech
-
-
-def test_end():
-    """ Clean the directory at the end. """
-    os.rename('test_model/alphabet.txt', 'alphabet.txt')
-    os.rename('test_model/configuration.yaml', 'configuration.yaml')
-    shutil.rmtree('test_model')
-    os.mkdir('test_model')
-    os.rename('alphabet.txt', 'test_model/alphabet.txt')
-    os.rename('configuration.yaml', 'test_model/configuration.yaml')
-
-
-is_same = lambda A, B: all(np.array_equal(a, b) for a, b in zip(A, B))
+def test_end(model_dir: str):
+    """ Clean the directory at the beginning. Keep only alphabet and configuration files. """
+    shutil.move(os.path.join(model_dir, 'alphabet.txt'), 'alphabet.txt')
+    shutil.move(os.path.join(model_dir, 'configuration.yaml'), 'configuration.yaml')
+    shutil.rmtree(model_dir)
+    os.mkdir(model_dir)
+    shutil.move('alphabet.txt', os.path.join(model_dir, 'alphabet.txt'))
+    shutil.move('configuration.yaml', os.path.join(model_dir, 'configuration.yaml'))
