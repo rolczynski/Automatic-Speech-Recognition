@@ -1,9 +1,15 @@
+import os
 import pytest
 import h5py
 import pandas as pd
 import numpy as np
 import scipy.io.wavfile as wav
 from scripts.features import extract_features, divide, concatenate, generate_samples_from
+
+
+@pytest.fixture
+def store_path() -> str:
+    return 'tests/data/features.hdf5'
 
 
 @pytest.fixture
@@ -93,11 +99,6 @@ def test_generate_samples_from(segmented_phrases: pd.DataFrame, audio_data: np.n
     assert firs_sample.features.shape == (224, 26)
 
 
-@pytest.fixture
-def store_path() -> str:
-    return 'tests/data/features.hdf5'
-
-
 def test_extract_features(store_path: str, audio_path: str, segmented_path: str, max_words: int, mfcc_params: dict):
     extract_features(store_path, audio_path, segmented_path, max_words, mfcc_params)
     with pd.HDFStore(store_path, mode='r') as store:
@@ -114,3 +115,7 @@ def test_extract_features(store_path: str, audio_path: str, segmented_path: str,
         sample = store[record_path]
         assert sample.dtype == np.float
         assert sample.ndim == 2
+
+
+def test_end(store_path: str):
+    os.remove(store_path)
