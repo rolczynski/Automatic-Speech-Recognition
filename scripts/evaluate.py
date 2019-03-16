@@ -1,18 +1,19 @@
 import argparse
-import os
-import sys  # Add `source` module (needed when it runs via terminal)
-sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
-import pandas as pd
-from collections import namedtuple
+import operator
 from functools import reduce
+from typing import List, Callable, Iterable
+import h5py
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+from keras import backend as K
+from keras.models import Model
+from source.deepspeech import DeepSpeech
+from source.metric import Metric, get_metrics
+from source.utils import chdir, load, create_logger
 
-from source.utils import chdir, load_model, create_logger
-from source.generator import DataGenerator
-from source.text import get_batch_transcripts
-from scripts.confusion_matrix import edit_distance
 
-
-def calculate_units(model):
+def calculate_units(model: Model) -> int:
     """ Calculate number of the model parameters. """
     units = 0
     for parameters in model.get_weights():
@@ -20,57 +21,76 @@ def calculate_units(model):
     return units
 
 
-def get_results(sources, destinations):
-    """ Calculate base metrics: WER and CER. """
-    Sample = namedtuple('Sample', 'original prediction wer cer')
-    for source, destination in zip(sources, destinations):
-        wer_distance, *_ = edit_distance(source.split(), destination.split())
-        wer = wer_distance / len(destination.split())
-
-        cer_distance, *_ = edit_distance(source, destination)
-        cer = cer_distance / len(destination)
-
-        yield Sample(destination, source, wer, cer)
+def get_activations_function(model: Model) -> Callable:
+    """ Function which handle all activations through one pass. """
+    inputs = [model.input, K.learning_phase()]
+    outputs = [layer.output for layer in model.layers][1:]
+    return K.function(inputs, outputs)
 
 
-def main(model_path, store_path, batch_size, home_directory):
+def save_in(store: h5py.File, layer_outputs: List[np.ndarray], metrics: List[Metric], references: pd.DataFrame):
+    """ Save batch data into HDF5 file. """
+    for index, metric in enumerate(metrics):
+        sample_id = len(references)
+        references.loc[sample_id] = metric
+
+        for output_index, batch_layer_outputs in enumerate(layer_outputs):
+            layer_output = batch_layer_outputs[index]
+            store.create_dataset(f'outputs/{output_index}/{sample_id}', data=layer_output)
+
+
+def evaluate_batch(deepspeech: DeepSpeech, X: np.ndarray, y: np.ndarray, store: h5py.File,
+                   references: pd.DataFrame, save_activations: bool, get_activations: Callable) -> List[Metric]:
+    if save_activations:
+        *activations, y_hat = get_activations([X, 0])  # Learning phase is `test=0`
+    else:
+        activations = []
+        y_hat = deepspeech.predict(X)
+
+    predict_sentences = deepspeech.decode(y_hat)
+    true_sentences = deepspeech.get_transcripts(y)
+    metrics = list(get_metrics(sources=predict_sentences, destinations=true_sentences))
+    save_in(store, [X, *activations, y], metrics, references)
+    return metrics
+
+
+def evaluate(deepspeech: DeepSpeech, generator: Iterable, save_activations: bool, store_path: str) -> pd.DataFrame:
+    references = pd.DataFrame(columns=['sample_id', 'transcript', 'prediction', 'wer', 'cer']).set_index('sample_id')
+    get_activations = get_activations_function(deepspeech.model)
+    with h5py.File(store_path, mode='w') as store:
+        batch_metrics = [evaluate_batch(deepspeech, X, y, store, references, save_activations, get_activations)
+                         for X, y in tqdm(generator)]
+    with pd.HDFStore(store_path, mode='r+') as store:
+        store.put('references', references)
+    metrics = pd.DataFrame(reduce(operator.concat, batch_metrics))
+    return metrics
+
+
+def main(store_path: str, model_dir: str, features_store_path: str, batch_size: int, save_activations: bool):
     """ Evaluate model using prepared features. """
-    deepspeech = load_model(model_path)
-    generator = DataGenerator.from_prepared_features(file_path=store_path,
-                                                     alphabet=deepspeech.alphabet,
-                                                     batch_size=batch_size)
+    deepspeech = load(model_dir)
+    generator = deepspeech.create_generator(features_store_path, source='from_prepared_features', batch_size=batch_size)
+
     units = calculate_units(deepspeech.model)
     logger.info(f'Model contains: {units//1e6:.0f}M units ({units})')
 
-    results = []
-    for index, (X, y) in enumerate(generator):
-        logger.info(f'Batch ({index})')
-        y_hat = deepspeech.predict_on_batch(X)
-
-        predict_sentences = deepspeech.decode(y_hat, beam_size=1000)
-        true_sentences = get_batch_transcripts(y, deepspeech.alphabet)
-
-        batch_results = get_results(sources=predict_sentences, destinations=true_sentences)
-        results.extend(list(batch_results))
-
-    df = pd.DataFrame(results)
-    df.to_csv(os.path.join(home_directory, 'results.csv'), index=False)
-    logger.info(f'Mean CER: {df.cer.mean():.4f}')
-    logger.info(f'Mean WER: {df.wer.mean():.4f}')
+    metrics = evaluate(deepspeech, generator, save_activations, store_path)
+    logger.info(f'Mean CER: {metrics.cer.mean():.4f}')
+    logger.info(f'Mean WER: {metrics.wer.mean():.4f}')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', required=True, help='Pretrained model')
-    parser.add_argument('--home_directory', required=True, help='Directory where save results')
-    parser.add_argument('--store', required=True, help='Store with precomputed features')
+    parser.add_argument('--store', required=True, help='File hdf5 keeps evaluation results')
+    parser.add_argument('--model_dir', required=True, help='Pretrained model directory')
+    parser.add_argument('--features_store', required=True, help='HDF5 Store with precomputed features')
+    parser.add_argument('--batch_size', type=int, required=True, help='Batch size (depends on model) should be the same as during training')
     parser.add_argument('--log_file', help='Log file')
     parser.add_argument('--log_level', type=int, default=20, help='Log level')
-    parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
-    arguments = parser.parse_args()
+    parser.add_argument('--save_activations', type=bool, default=True, help='Save all activation through evaluation')
+    args = parser.parse_args()
     chdir(to='ROOT')
 
-    os.makedirs(arguments.home_directory, exist_ok=True)
-    logger = create_logger(arguments.log_file, level=arguments.log_level, name='evaluate')
-    logger.info(f'Arguments: \n{arguments}')
-    main(arguments.model, arguments.store, arguments.batch_size, arguments.home_directory)
+    logger = create_logger(args.log_file, level=args.log_level, name='evaluate')
+    logger.info(f'Arguments: \n{args}')
+    main(args.store, args.model_dir, args.features_store, args.batch_size, args.save_activations)
