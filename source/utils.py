@@ -12,8 +12,8 @@ def save(data: Any, file_name: str):
 
 
 def get_root_dir() -> str:
-    import run
-    return os.path.dirname(run.__file__)
+    source_dir = os.path.dirname(__file__)
+    return os.path.join(source_dir, '..')
 
 
 def chdir(to='ROOT'):
