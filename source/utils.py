@@ -13,7 +13,7 @@ def save(data: Any, file_name: str):
 
 def get_root_dir() -> str:
     source_dir = os.path.dirname(__file__)
-    return os.path.join(source_dir, '..')
+    return os.path.abspath(os.path.join(source_dir, '..'))
 
 
 def chdir(to='ROOT'):
