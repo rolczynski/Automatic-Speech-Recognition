@@ -58,9 +58,12 @@ def load(name: str):
     config_path = os.path.join(model_dir, 'configuration.yaml')
     alphabet_path = os.path.join(model_dir, 'alphabet.txt')
     weights_path = os.path.join(model_dir, 'weights.hdf5')
+    assert os.path.isfile(config_path), 'The config file required in the directory'
+    assert os.path.isfile(alphabet_path), 'The alphabet file required in the directory'
 
     deepspeech = DeepSpeech.construct(config_path, alphabet_path)
-    deepspeech.load(weights_path)
+    if os.path.isfile(weights_path):
+        deepspeech.load(weights_path)
     return deepspeech
 
 
