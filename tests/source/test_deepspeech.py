@@ -7,6 +7,7 @@ warnings.simplefilter("ignore", category=DeprecationWarning)    # Tensorflow war
 from typing import List
 from keras.engine.training import Model
 from deepspeech import DeepSpeech, Configuration, FeaturesExtractor, Alphabet, DataGenerator, History
+from scripts.features import extract_features
 is_same = lambda A, B: all(np.array_equal(a, b) for a, b in zip(A, B))
 
 
@@ -33,6 +34,12 @@ def config(config_path) -> Configuration:
 @pytest.fixture
 def alphabet(alphabet_path: str) -> Alphabet:
     return DeepSpeech.get_alphabet(alphabet_path)
+
+
+def test_start():
+    """ Evaluation depends on the features store. """
+    extract_features('tests/data/features.hdf5', 'tests/data/audio.csv', 'tests/data/segmented.csv', 7,
+                     dict(winlen=0.032, winstep=0.02, numcep=26, winfunc=np.hamming))
 
 
 def test_config(config: Configuration):
@@ -181,3 +188,4 @@ def test_end(model_dir: str):
     os.mkdir(model_dir)
     shutil.move('alphabet.txt', os.path.join(model_dir, 'alphabet.txt'))
     shutil.move('configuration.yaml', os.path.join(model_dir, 'configuration.yaml'))
+    os.remove('tests/data/features.hdf5')
