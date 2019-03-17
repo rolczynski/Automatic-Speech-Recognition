@@ -28,10 +28,10 @@ def extract_feature_stats(store_path: str, feature_index: int, iterator: Iterabl
 @mem.cache
 def extract_stats(store_path: str, processes: int = cpu_count()) -> np.ndarray:
     with pd.HDFStore(store_path, mode='r') as store:
-        metadata = store['metadata']
+        references = store['references']
         info = store['info']
 
-    paths = metadata['path']
+    paths = references['path']
     features_num = info['numcep'][0]
     with Pool(processes) as pool:
         stats = [extract_feature_stats(store_path, feature_index, paths, pool)
@@ -65,10 +65,10 @@ def main(ref_store_path: str, word_min: int = 3):
             pd.HDFStore(store_path, mode='w') as store:
 
         store['info'] = ref_store['info']
-        ref_metadata = ref_store['metadata']
-        word_counts = ref_metadata.transcript.str.split().map(len)
-        store['metadata'] = ref_metadata[word_counts >= word_min]
-        paths = store['metadata']['path']
+        ref_references = ref_store['references']
+        word_counts = ref_references.transcript.str.split().map(len)
+        store['references'] = ref_references[word_counts >= word_min]
+        paths = store['references']['path']
 
     with h5py.File(ref_store_path, mode='r') as ref_store, \
             h5py.File(store_path, mode='r+') as store:
