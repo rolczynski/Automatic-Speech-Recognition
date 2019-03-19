@@ -47,7 +47,7 @@ def copy_normalized_datasets(ref_store, store, stats: np.ndarray, iterator: Iter
         store.create_dataset(path, data=normalized_data)
 
 
-def main(ref_store_path: str, word_min: int = 3):
+def main(ref_store_path: str, word_min: int = 3, max_time: int = 7):
     """
     Normalize training examples on a per utterance basis in order to make the total power of each
     example consistent. From each frequency bin remove the global mean over the training set and
@@ -67,7 +67,7 @@ def main(ref_store_path: str, word_min: int = 3):
         store['info'] = ref_store['info']
         ref_references = ref_store['references']
         word_counts = ref_references.transcript.str.split().map(len)
-        store['references'] = ref_references[word_counts >= word_min]
+        store['references'] = ref_references[(word_counts >= word_min) & (ref_references['size'] < max_time * 16000)]
         paths = store['references']['path']
 
     with h5py.File(ref_store_path, mode='r') as ref_store, \
