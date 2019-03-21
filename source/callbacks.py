@@ -39,16 +39,10 @@ class ResultKeeper(Callback):
         val_loss = logs.get('val_loss')
         self.results.append([epoch, loss, val_loss, self.batch])
         logger.info(f'Epoch ({epoch}): {loss}   {val_loss}')
-
-    on_epoch_end = _save_epoch_results
-
-
-    def _save_results(self, *_):
-        """ Save final results. """
         save(self.results, self.file_path)
         logger.info(f'Evaluation results saved in {self.file_path}')
 
-    on_train_end = _save_results
+    on_epoch_end = _save_epoch_results
 
 
 class CustomModelCheckpoint(Callback):
