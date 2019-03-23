@@ -51,7 +51,7 @@ def evaluate_batch(deepspeech: DeepSpeech, X: np.ndarray, y: np.ndarray, store: 
     predict_sentences = deepspeech.decode(y_hat)
     true_sentences = deepspeech.get_transcripts(y)
     metrics = list(get_metrics(sources=predict_sentences, destinations=true_sentences))
-    save_in(store, [X, *activations, y], metrics, references)
+    save_in(store, [X, *activations, y_hat], metrics, references)
     return metrics
 
 
