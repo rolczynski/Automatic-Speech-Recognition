@@ -8,6 +8,7 @@ import pandas as pd
 from tqdm import tqdm
 from keras import backend as K
 from keras.models import Model
+from keras.backend.tensorflow_backend import _get_available_gpus as get_available_gpus
 from source.deepspeech import DeepSpeech
 from source.metric import Metric, get_metrics
 from source.utils import chdir, load, create_logger
@@ -56,7 +57,13 @@ def evaluate_batch(deepspeech: DeepSpeech, X: np.ndarray, y: np.ndarray, store: 
 
 def evaluate(deepspeech: DeepSpeech, generator: Iterable, save_activations: bool, store_path: str) -> pd.DataFrame:
     references = pd.DataFrame(columns=['sample_id', 'transcript', 'prediction', 'wer', 'cer']).set_index('sample_id')
-    get_activations = get_activations_function(deepspeech.model)
+    available_gpus = get_available_gpus()
+    if save_activations and len(available_gpus) < 2:
+        get_activations = get_activations_function(deepspeech.model)
+    else:
+        save_activations = get_activations = None
+        logger.warning(f'Activation can not be handled using distrubuted model (few GPUs)')
+
     with h5py.File(store_path, mode='w') as store:
         batch_metrics = [evaluate_batch(deepspeech, X, y, store, references, save_activations, get_activations)
                          for X, y in tqdm(generator)]
