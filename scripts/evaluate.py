@@ -1,3 +1,4 @@
+import os
 import argparse
 import operator
 from functools import reduce
@@ -57,12 +58,7 @@ def evaluate_batch(deepspeech: DeepSpeech, X: np.ndarray, y: np.ndarray, store: 
 
 def evaluate(deepspeech: DeepSpeech, generator: Iterable, save_activations: bool, store_path: str) -> pd.DataFrame:
     references = pd.DataFrame(columns=['sample_id', 'transcript', 'prediction', 'wer', 'cer']).set_index('sample_id')
-    available_gpus = get_available_gpus()
-    if save_activations and len(available_gpus) < 2:
-        get_activations = get_activations_function(deepspeech.model)
-    else:
-        save_activations = get_activations = None
-        logger.warning(f'Activation can not be handled using distrubuted model (few GPUs)')
+    get_activations = get_activations_function(deepspeech.model) if save_activations else None
 
     with h5py.File(store_path, mode='w') as store:
         batch_metrics = [evaluate_batch(deepspeech, X, y, store, references, save_activations, get_activations)
@@ -75,6 +71,11 @@ def evaluate(deepspeech: DeepSpeech, generator: Iterable, save_activations: bool
 
 def main(store_path: str, model_dir: str, features_store_path: str, batch_size: int, save_activations: bool):
     """ Evaluate model using prepared features. """
+    available_gpus = get_available_gpus()
+    if save_activations and len(available_gpus) > 1:
+        os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+        logger.warning('Activation can not be handled using distrubuted model (few GPUs). First GPU selected.')
+
     deepspeech = load(model_dir)
     generator = deepspeech.create_generator(features_store_path, source='from_prepared_features', batch_size=batch_size)
 
