@@ -1,4 +1,6 @@
 import os
+# Activation can not be handled using distrubuted model (few GPUs). First GPU selected.
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import argparse
 import operator
 from functools import reduce
@@ -9,7 +11,6 @@ import pandas as pd
 from tqdm import tqdm
 from keras import backend as K
 from keras.models import Model
-from keras.backend.tensorflow_backend import _get_available_gpus as get_available_gpus
 from source.deepspeech import DeepSpeech
 from source.metric import Metric, get_metrics
 from source.utils import chdir, load, create_logger
@@ -71,11 +72,6 @@ def evaluate(deepspeech: DeepSpeech, generator: Iterable, save_activations: bool
 
 def main(store_path: str, model_dir: str, features_store_path: str, batch_size: int, save_activations: bool):
     """ Evaluate model using prepared features. """
-    available_gpus = get_available_gpus()
-    if save_activations and len(available_gpus) > 1:
-        os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-        logger.warning('Activation can not be handled using distrubuted model (few GPUs). First GPU selected.')
-
     deepspeech = load(model_dir)
     generator = deepspeech.create_generator(features_store_path, source='from_prepared_features', batch_size=batch_size)
 
