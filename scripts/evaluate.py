@@ -91,7 +91,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, required=True, help='Batch size (depends on model) should be the same as during training')
     parser.add_argument('--log_file', help='Log file')
     parser.add_argument('--log_level', type=int, default=20, help='Log level')
-    parser.add_argument('--save_activations', type=bool, default=True, help='Save all activation through evaluation')
+    parser.add_argument('--save_activations', dest='save_activations', action='store_true', help='Save all activation through evaluation')
     args = parser.parse_args()
     chdir(to='ROOT')
 
