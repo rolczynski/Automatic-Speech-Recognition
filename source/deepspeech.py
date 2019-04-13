@@ -129,6 +129,9 @@ class DeepSpeech:
         distributed_model = multi_gpu_model(model, gpus_num) if gpus_num > 1 else model
         y = Input(name='y', shape=[None], dtype='int32')
         distributed_model.compile(optimizer, loss, target_tensors=[y])
+        softmax = model.layers[-1]
+        if not softmax.trainable:
+            softmax.set_weights(softmax.embeddings)
         distributed_model.template_model = model
         return distributed_model
 
