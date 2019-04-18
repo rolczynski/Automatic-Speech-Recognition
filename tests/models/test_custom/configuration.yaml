@@ -1,0 +1,50 @@
+
+# Define how audio files are processing.
+features_extractor:
+  numcep: 26
+  winlen: 0.032
+  winstep: 0.02
+  winfunc: hamming
+
+
+# Custom architecture can be created using `deepspeech-custom`.
+model:
+  name: deepspeech-custom
+  layers:
+    - name: expand_dims
+      axis: -1
+    - name: ZeroPadding2D
+      padding: [3, 6]
+    - name: Conv2D
+      filters: 40
+      kernel_size: [7, 13]
+    - name: squeeze_last_dims
+      units: 1040
+    - name: Dense
+      units: 128
+    - name: Dense
+      units: 128
+    - name: ReLU
+      max_value: 20
+  embeddings: char-embeddings-128.txt
+
+
+# The available optimizers are specified in: `get_optimizer` and
+# come from `keras.optimizers` module.
+optimizer:
+  name: adam
+  lr: 0.00001 # 1E-5
+  beta_1: 0.9
+  beta_2: 0.999
+  epsilon: 0.00000001
+
+
+# Set callbacks to get a view on internal states and statistics of the model
+# during training.
+callbacks:
+- name: TerminateOnNaN1024
+
+# Define method of decoding probabilities into transcription
+decoder:
+  name: tensorflow
+  beam_size: 1024
