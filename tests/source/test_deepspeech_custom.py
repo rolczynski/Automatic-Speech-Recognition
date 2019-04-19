@@ -32,12 +32,12 @@ def config(config_path) -> Configuration:
 
 
 def test_compile_model(config: Configuration, deepspeech: DeepSpeech):
-    embeddings_path = config.model['embeddings']
+    embeddings_path = config.model['embeddings']['file']
     char_embeddings = np.loadtxt(embeddings_path)
     assert char_embeddings.shape == (128, 36)
-    softmax = deepspeech.model.layers[-1].layer  # The last TimeDistributed layer contains Softmax layer
-    softmax_weights, = softmax.get_weights()
+    softmax = deepspeech.model.layers[-1]  # The last TimeDistributed layer contains Softmax layer
+    softmax_weights, = softmax.layer.get_weights()
     assert np.array_equal(char_embeddings, softmax_weights)
-    softmax = deepspeech.distributed_model.get_layer('DeepSpeech').layers[-1].layer
-    softmax_weights, = softmax.get_weights()
+    softmax = deepspeech.distributed_model.get_layer('DeepSpeech').layers[-1]
+    softmax_weights, = softmax.layer.get_weights()
     assert np.array_equal(char_embeddings, softmax_weights)

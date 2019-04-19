@@ -26,7 +26,10 @@ model:
       units: 128
     - name: ReLU
       max_value: 20
-  embeddings: char-embeddings-128.txt
+  embeddings:
+    file: tests/models/test_custom/char-embeddings-lstm128.txt
+    kernel_regularizer_alpha: 0.1
+    bias_regularizer_alpha: 0.1
 
 
 # The available optimizers are specified in: `get_optimizer` and
