@@ -129,7 +129,7 @@ def test_fit(deepspeech: DeepSpeech, generator: DataGenerator, config_path: str,
     # Test save best weights (overwrite the best result)
     weights_path = os.path.join(model_dir, 'weights_copy.hdf5')
     deepspeech.save(weights_path)
-    distributed_weights = deepspeech.distributed_model.get_weights()
+    distributed_weights = deepspeech.compiled_model.get_weights()
     model_checkpoint = deepspeech.callbacks[2]
     model_checkpoint.best_result = 0
     model_checkpoint.best_weights_path = weights_path
@@ -145,7 +145,7 @@ def test_fit(deepspeech: DeepSpeech, generator: DataGenerator, config_path: str,
     assert is_same(deepspeech_weights, new_deepspeech_weights)
 
     # Test that distributed model appropriate update weights
-    new_distributed_weights = deepspeech.distributed_model.get_weights()
+    new_distributed_weights = deepspeech.compiled_model.get_weights()
     assert is_same(distributed_weights, new_distributed_weights)
 
 

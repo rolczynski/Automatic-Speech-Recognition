@@ -42,7 +42,7 @@ class DeepSpeech:
         self.decoder = decoder
         self.callbacks = callbacks
         self.gpus = gpus
-        self.distributed_model = self.compile_model(model, optimizer, loss, gpus)
+        self.compiled_model = self.compile_model(model, optimizer, loss, gpus)
 
 
     @classmethod
@@ -94,15 +94,15 @@ class DeepSpeech:
 
     def fit(self, train_generator, dev_generator, **kwargs) -> History:
         """ Train model using train and dev data generators base on the Keras method."""
-        return self.distributed_model.fit_generator(generator=train_generator,
-                                                    validation_data=dev_generator,
-                                                    callbacks=self.callbacks,
-                                                    **kwargs)
+        return self.compiled_model.fit_generator(generator=train_generator,
+                                                 validation_data=dev_generator,
+                                                 callbacks=self.callbacks,
+                                                 **kwargs)
 
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """ Predict on the batch. """
-        return self.distributed_model.predict_on_batch(X)
+        return self.compiled_model.predict_on_batch(X)
 
 
     def decode(self, y_hat: np.ndarray) -> List[str]:
@@ -126,14 +126,11 @@ class DeepSpeech:
         """ Compiled the model. The template model shares the same weights, but it is not distributed
         along different devices. It is useful for callbacks."""
         gpus_num = len(gpus)
-        distributed_model = multi_gpu_model(model, gpus_num) if gpus_num > 1 else model
+        compiled_model = multi_gpu_model(model, gpus_num) if gpus_num > 1 else model
         y = Input(name='y', shape=[None], dtype='int32')
-        distributed_model.compile(optimizer, loss, target_tensors=[y])
-        softmax = model.layers[-1]
-        if hasattr(softmax, 'embeddings'):
-            softmax.layer.set_weights(softmax.embeddings)
-        distributed_model.template_model = model
-        return distributed_model
+        compiled_model.compile(optimizer, loss, target_tensors=[y])
+        compiled_model.template_model = model
+        return compiled_model
 
 
     @staticmethod
