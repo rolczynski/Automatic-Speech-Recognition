@@ -84,7 +84,7 @@ class DataGenerator(Sequence):
 
     def _extract_features(self, paths):
         """ Extract features from the audio files (mono 16kHz). """
-        return self._features_extractor.get_features_mfcc(files=paths)
+        return self._features_extractor.get_features(files=paths)
 
 
     def on_epoch_end(self):

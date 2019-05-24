@@ -1,16 +1,16 @@
 
 # Define how audio files are processing.
 features_extractor:
-  numcep: 26
-  winlen: 0.032
-  winstep: 0.02
+  winlen: 0.025
+  winstep: 0.01
+  nfilt: 80
   winfunc: hamming
 
 
 # Custom architecture can be created using `deepspeech-custom`.
 model:
   name: deepspeech
-  units: 64
+  units: 1024
 
 
 # The available optimizers are specified in: `get_optimizer` and

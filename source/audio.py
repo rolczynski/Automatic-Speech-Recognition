@@ -11,19 +11,20 @@ class FeaturesExtractor:
         self.params = kwargs
 
 
-    def get_features_mfcc(self, files: list) -> np.ndarray:
+    def get_features(self, files: list) -> np.ndarray:
         """ Extract MFCC features from the files list. """
-        mfccs = [self.make_mfcc(file, **self.params) for file in files]
+        mfccs = [self.make_features(file, **self.params) for file in files]
         X = self.align(mfccs)
         return X
 
 
     @staticmethod
-    def make_mfcc(file_path: str, **kwargs) -> np.ndarray:
+    def make_features(file_path: str, **kwargs) -> np.ndarray:
         """ Use `python_speech_features` lib to extract MFCC features from the audio file. """
         fs, audio = wav.read(file_path)
-        mfcc = python_speech_features.mfcc(audio, samplerate=fs, **kwargs)
-        return mfcc
+        feat, energy = python_speech_features.fbank(audio, samplerate=fs, **kwargs)
+        features = np.log(feat)
+        return features
 
 
     @staticmethod

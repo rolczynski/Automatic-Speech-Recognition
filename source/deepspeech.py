@@ -73,7 +73,7 @@ class DeepSpeech:
 
     def get_features(self, files: List[str]) -> np.ndarray:
         """ Extract features from files. """
-        return self.features_extractor.get_features_mfcc(files)
+        return self.features_extractor.get_features(files)
 
 
     def get_labels(self, transcripts: List[str]) -> np.ndarray:
