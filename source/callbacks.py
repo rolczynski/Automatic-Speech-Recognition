@@ -5,6 +5,7 @@ import logging
 from keras.callbacks import Callback, TensorBoard, EarlyStopping
 
 from source.utils import save
+
 logger = logging.getLogger('deepspeech')
 
 
@@ -16,13 +17,11 @@ class ResultKeeper(Callback):
         self.results = []
         self.file_path = file_path
 
-
     def _set_up_new_batch(self, *_):
         """ Set up the new list for batch results."""
         self.batch = []
 
     on_epoch_begin = _set_up_new_batch
-
 
     def _save_batch_result(self, index, logs={}):
         """ Add next batch loss. """
@@ -31,7 +30,6 @@ class ResultKeeper(Callback):
         logger.info(f'Batch ({index}): {loss:.2f}')
 
     on_batch_end = _save_batch_result
-
 
     def _save_epoch_results(self, epoch, logs={}):
         """ Collect all information about each epoch. """
@@ -55,14 +53,12 @@ class CustomModelCheckpoint(Callback):
         self.best_result = np.inf
         self.best_weights_path = None
 
-
     def _create_log_directory(self, _):
         """ Create the directory where the checkpoints are saved. """
         if not os.path.isdir(self.log_dir):
             os.makedirs(self.log_dir)
 
     on_train_begin = _create_log_directory
-
 
     def _save_model_weights(self, epoch, logs={}):
         """ Save model with weights of the single-gpu template model. """
@@ -75,7 +71,6 @@ class CustomModelCheckpoint(Callback):
             self.best_weights_path = file_path
 
     on_epoch_end = _save_model_weights
-
 
     def _set_best_weights_to_model(self, history):
         """ Set best weights to the model. Checkpoint callback save the best
@@ -92,7 +87,6 @@ class CustomTensorBoard(TensorBoard):
     def __init__(self, log_dir):
         super().__init__(log_dir)
         self.processed_batches = 0
-
 
     def _save_batch_loss(self, _, logs={}):
         """ Add value to the tensorboard event """
@@ -115,7 +109,6 @@ class CustomEarlyStopping(EarlyStopping):
         mini_targets = kwargs.pop('mini_targets')
         self._mini_targets = mini_targets
         super().__init__(**kwargs)
-
 
     def on_epoch_end(self, epoch, logs=None):
         """ Finish training if the `monitor` value is too high. """

@@ -44,7 +44,6 @@ class DeepSpeech:
         self.gpus = gpus
         self.compiled_model = self.compile_model(model, optimizer, loss, gpus)
 
-
     @classmethod
     def construct(cls, config_path: str, alphabet_path: str) -> 'DeepSpeech':
         """ Construct DeepSpeech object base on the configuration and the alphabet files. """
@@ -62,7 +61,6 @@ class DeepSpeech:
         decoder = cls.get_decoder(alphabet=alphabet, model=model, **config.decoder)
         return cls(model, loss, optimizer, callbacks, alphabet, decoder, features_extractor, gpus)
 
-
     def __call__(self, files: List[str]) -> List[str]:
         """ Easy interaction with the trained model """
         X = self.get_features(files)
@@ -70,27 +68,23 @@ class DeepSpeech:
         sentences = self.decode(y_hat)
         return sentences
 
-
     def get_features(self, files: List[str]) -> np.ndarray:
         """ Extract features from files. """
         return self.features_extractor.get_features(files)
-
 
     def get_labels(self, transcripts: List[str]) -> np.ndarray:
         """ Convert transcripts to labels. """
         return self.alphabet.get_batch_labels(transcripts)
 
-
     def get_transcripts(self, labels: np.ndarray) -> List[str]:
         """ Convert labels to transcripts. """
         return self.alphabet.get_batch_transcripts(labels)
 
-
     def create_generator(self, file_path, source='from_audio_files', **kwargs) -> DataGenerator:
         """ Create generator from audio files (csv file) or prepared features (hdf5 file). """
         _create_generator = getattr(DataGenerator, source)
-        return _create_generator(file_path, alphabet=self.alphabet, features_extractor=self.features_extractor, **kwargs)
-
+        return _create_generator(file_path, alphabet=self.alphabet, features_extractor=self.features_extractor,
+                                 **kwargs)
 
     def fit(self, train_generator, dev_generator, **kwargs) -> History:
         """ Train model using train and dev data generators base on the Keras method."""
@@ -99,27 +93,22 @@ class DeepSpeech:
                                                  callbacks=self.callbacks,
                                                  **kwargs)
 
-
     def predict(self, X: np.ndarray) -> np.ndarray:
         """ Predict on the batch. """
         return self.compiled_model.predict_on_batch(X)
-
 
     def decode(self, y_hat: np.ndarray) -> List[str]:
         """ Decode probabilities along characters using the beam search algorithm. """
         return self.decoder(y_hat)
 
-
     def save(self, file_path: str):
         """ Save model weights. Object can be easily reinitialized. """
         self.model.save_weights(file_path)
-
 
     @utils.pretrained_models
     def load(self, file_path: str):
         """ Load model weights from the pretrained model. """
         self.model.load_weights(file_path)
-
 
     @staticmethod
     def compile_model(model: Model, optimizer: Optimizer, loss: Callable, gpus: list) -> Model:
@@ -132,12 +121,10 @@ class DeepSpeech:
         compiled_model.template_model = model
         return compiled_model
 
-
     @staticmethod
     def get_configuration(file_path: str) -> Configuration:
         """ Read components parameters from the yaml file via Configuration object. """
         return configuration.Configuration(file_path)
-
 
     @staticmethod
     def get_model(name: str, **kwargs) -> Model:
@@ -148,18 +135,15 @@ class DeepSpeech:
             return model.deepspeech_custom(**kwargs)
         raise ValueError('Wrong model name')
 
-
     @staticmethod
     def get_alphabet(file_path) -> Alphabet:
         """ Alphabet consists all valid characters / phonemes and helps work with texts. """
         return text.Alphabet(file_path)
 
-
     @staticmethod
     def get_features_extractor(**kwargs) -> FeaturesExtractor:
         """ Feature Extractor helps to convert audio files to features. """
         return audio.FeaturesExtractor(**kwargs)
-
 
     @staticmethod
     def get_optimizer(name: str, **kwargs) -> Optimizer:
@@ -170,10 +154,10 @@ class DeepSpeech:
             return Adam(**kwargs)
         raise ValueError('Wrong optimizer name')
 
-
     @staticmethod
     def get_loss() -> Callable:
         """ The CTC loss using TensorFlow's `ctc_loss` using Keras backend. """
+
         def get_length(tensor):
             lengths = tf.reduce_sum(tf.ones_like(tensor), 1)
             return tf.reshape(tf.cast(lengths, tf.int32), [-1, 1])
@@ -182,8 +166,8 @@ class DeepSpeech:
             sequence_length = get_length(tf.reduce_max(y_hat, 2))
             label_length = get_length(y)
             return tf.keras.backend.ctc_batch_cost(y, y_hat, sequence_length, label_length)
-        return ctc_loss
 
+        return ctc_loss
 
     @staticmethod
     def get_decoder(name: str, alphabet: Alphabet, model: Model, **kwargs) -> Callable:
@@ -194,7 +178,6 @@ class DeepSpeech:
             decoder = ctc_decoder.get_tensorflow_decoder(model.output, **kwargs)
             return partial(ctc_decoder.batch_tensorflow_decode, alphabet=alphabet, decoder=decoder)
         raise ValueError('Wrong decoder name')
-
 
     @staticmethod
     def get_callbacks(home_dir: str, configurations: list) -> List[Callback]:
@@ -215,7 +198,7 @@ class DeepSpeech:
 
             elif name == 'LearningRateScheduler':
                 k = configuration.pop('k')
-                lr_decay = lambda epoch, lr: lr/np.power(k, epoch)
+                lr_decay = lambda epoch, lr: lr / np.power(k, epoch)
                 callbacks.append(LearningRateScheduler(lr_decay, **configuration))
 
             elif name == 'ReduceLROnPlateau':

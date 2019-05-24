@@ -20,21 +20,17 @@ class Alphabet:
         self._str_to_label = {}
         self.process_alphabet_file(file_path)
 
-
     def __contains__(self, char: str) -> bool:
         """ Check if char is in the Alphabet. """
         return char in self._str_to_label
-
 
     def string_from_label(self, label: int) -> str:
         """ Convert label to string. """
         return self._label_to_str[label]
 
-
     def label_from_string(self, string: str) -> int:
         """ Convert string to label. """
         return self._str_to_label[string]
-
 
     def process_alphabet_file(self, file_path: str):
         """ Read alphabet.txt file. """
@@ -50,7 +46,6 @@ class Alphabet:
             # Blank token is added on the end
             self.blank_token = self.size - 1
 
-
     def get_batch_labels(self, transcripts: List[str]) -> np.ndarray:
         """ Convert batch transcripts to labels """
         batch_labels = [[self.label_from_string(c) for c in transcript if c in self]
@@ -60,11 +55,10 @@ class Alphabet:
         default_value = self.blank_token
 
         for labels in batch_labels:
-            remainder = [default_value] * (max_len-len(labels))
+            remainder = [default_value] * (max_len - len(labels))
             labels.extend(remainder)
 
         return np.array(batch_labels)
-
 
     def get_batch_transcripts(self, sequences: np.ndarray) -> List[str]:
         """ Convert label sequences to transcripts. The `-1` also means the blank tag """

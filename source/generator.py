@@ -17,6 +17,7 @@ class DataGenerator(Sequence):
     References:
     https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly.html
     """
+
     def __init__(self,
                  references: pd.DataFrame,
                  alphabet: Alphabet,
@@ -33,7 +34,6 @@ class DataGenerator(Sequence):
         self.epoch = 0
         self.indices = np.arange(len(self))
 
-
     @classmethod
     def from_audio_files(cls, file_path, **kwargs):
         """ Create generator from csv file. The file contains audio file paths
@@ -41,30 +41,26 @@ class DataGenerator(Sequence):
         references = pd.read_csv(file_path, usecols=['path', 'transcript'], sep=',', encoding='utf-8', header=0)
         return cls(references, **kwargs)
 
-
     @classmethod
     def from_prepared_features(cls, file_path, **kwargs):
         """ Create generator from prepared features saved in the HDF5 format.
         The hdf5 file has the hierarchy with /-separator and also can be invoke via `path`. """
         features_store = h5py.File(file_path, mode='r')
-        references = pd.HDFStore(file_path, mode='r')['references']   # Read DataFrame via PyTables
+        references = pd.HDFStore(file_path, mode='r')['references']  # Read DataFrame via PyTables
         return cls(references, features_store=features_store, **kwargs)
-
 
     def __len__(self):
         """ Denotes the number of batches per epoch. """
         return int(np.floor(len(self._references.index) / self._batch_size))
-
 
     def __getitem__(self, next_index):
         """ Operator to get the batch data. """
         batch_index = self.indices[next_index]
         return self._get_batch(batch_index)
 
-
     def _get_batch(self, index):
         """ Read (if features store exist) or generate features and labels batch. """
-        start, end = index*self._batch_size, (index+1)*self._batch_size
+        start, end = index * self._batch_size, (index + 1) * self._batch_size
         references = self._references[start:end]
         paths, transcripts = references.path, references.transcript
 
@@ -75,24 +71,20 @@ class DataGenerator(Sequence):
             features = self._extract_features(paths)
         return features, labels
 
-
     def _read_features(self, paths):
         """ Read already prepared features from the store. """
         features = [self._features_store[path][:] for path in paths]
         return self._features_extractor.align(features)
 
-
     def _extract_features(self, paths):
         """ Extract features from the audio files (mono 16kHz). """
         return self._features_extractor.get_features(files=paths)
-
 
     def on_epoch_end(self):
         """ Invoke methods at the end of the each epoch. The fit method should have: `shuffle=False`.
         Keras OrderedEnqueuer seems to run on async on two threads so the epoch number is counted twice (bug). """
         self.epoch += 1
         self._shuffle_indices()
-
 
     def _shuffle_indices(self):
         """ Set up the order of next batches """

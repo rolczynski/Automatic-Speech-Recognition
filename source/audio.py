@@ -10,13 +10,11 @@ class FeaturesExtractor:
             kwargs['winfunc'] = np.hamming
         self.params = kwargs
 
-
     def get_features(self, files: list) -> np.ndarray:
         """ Extract MFCC features from the files list. """
         mfccs = [self.make_features(file, **self.params) for file in files]
         X = self.align(mfccs)
         return X
-
 
     @staticmethod
     def make_features(file_path: str, **kwargs) -> np.ndarray:
@@ -25,7 +23,6 @@ class FeaturesExtractor:
         feat, energy = python_speech_features.fbank(audio, samplerate=fs, **kwargs)
         features = np.log(feat)
         return features
-
 
     @staticmethod
     def align(arrays: list, default=0) -> np.ndarray:
