@@ -47,7 +47,7 @@ However it's worth to understand conceptional crucial components:
 - **DataGenerator**: Stream data to the model via generator
 - **Callbacks**: Set of functions monitoring the training
 
-![Overview](images/overview.png)
+![Overview](overview.png)
 
 Loaded pre-trained model has already all components. The prediction can be invoked implicit via `__call__` 
 method or more explicit:
