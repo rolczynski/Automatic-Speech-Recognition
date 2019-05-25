@@ -11,31 +11,6 @@ from scripts.features import extract_features
 is_same = lambda A, B: all(np.array_equal(a, b) for a, b in zip(A, B))
 
 
-@pytest.fixture
-def model_dir() -> str:
-    return 'tests/models/test/'
-
-
-@pytest.fixture
-def config_path(model_dir: str) -> str:
-    return os.path.join(model_dir, 'configuration.yaml')
-
-
-@pytest.fixture
-def alphabet_path(model_dir: str) -> str:
-    return os.path.join(model_dir, 'alphabet.txt')
-
-
-@pytest.fixture
-def config(config_path) -> Configuration:
-    return DeepSpeech.get_configuration(config_path)
-
-
-@pytest.fixture
-def alphabet(alphabet_path: str) -> Alphabet:
-    return DeepSpeech.get_alphabet(alphabet_path)
-
-
 def test_start():
     """ Evaluation depends on the features store. """
     extract_features('tests/data/features.hdf5', 'tests/data/audio.csv', 'tests/data/segmented.csv', 7,
@@ -78,16 +53,6 @@ def test_compile_model(config: Configuration):
     assert compiled_model._is_compiled
 
 
-@pytest.fixture
-def deepspeech(config_path: str, alphabet_path: str) -> DeepSpeech:
-    return DeepSpeech.construct(config_path, alphabet_path)
-
-
-@pytest.fixture
-def audio_file_paths() -> List[str]:
-    return ['tests/data/audio/sent000.wav', 'tests/data/audio/sent001.wav']
-
-
 def test_get_features(deepspeech: DeepSpeech, audio_file_paths: List[str]):
     features = deepspeech.get_features(audio_file_paths)
     assert features.shape == (2, 739, 26)
@@ -118,11 +83,6 @@ def test_create_generator_from_prepared_features(deepspeech: DeepSpeech):
     X, y = generator[0]
     assert X.shape == (2, 93, 26)
     assert y.shape == (2, 39)
-
-
-@pytest.fixture
-def generator(deepspeech: DeepSpeech) -> DataGenerator:
-    return deepspeech.create_generator(file_path='tests/data/features.hdf5', source='from_prepared_features', batch_size=2)
 
 
 def test_fit(deepspeech: DeepSpeech, generator: DataGenerator, config_path: str, alphabet_path: str, model_dir: str):

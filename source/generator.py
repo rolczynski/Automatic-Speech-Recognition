@@ -4,6 +4,7 @@ import pandas as pd
 from keras.utils import Sequence
 from source.text import Alphabet
 from source.audio import FeaturesExtractor
+from source.augmentation import mask_features
 
 
 class DataGenerator(Sequence):
@@ -24,7 +25,9 @@ class DataGenerator(Sequence):
                  features_extractor: FeaturesExtractor,
                  shuffle_after_epoch=1,
                  batch_size=30,
-                 features_store=False):
+                 features_store=False,
+                 mask=False,
+                 mask_params=None):
         self._references = references
         self._features_store = features_store
         self._alphabet = alphabet
@@ -33,6 +36,8 @@ class DataGenerator(Sequence):
         self._shuffle_after_epoch = shuffle_after_epoch
         self.epoch = 0
         self.indices = np.arange(len(self))
+        self.mask = mask
+        self.mask_params = mask_params
 
     @classmethod
     def from_audio_files(cls, file_path, **kwargs):
@@ -69,6 +74,10 @@ class DataGenerator(Sequence):
             features = self._read_features(paths)
         else:
             features = self._extract_features(paths)
+
+        if self.mask:
+            features = self._mask_features(features)
+
         return features, labels
 
     def _read_features(self, paths):
@@ -79,6 +88,10 @@ class DataGenerator(Sequence):
     def _extract_features(self, paths):
         """ Extract features from the audio files (mono 16kHz). """
         return self._features_extractor.get_features(files=paths)
+
+    def _mask_features(self, features):
+        """ SpecAugment: A Simple Data Augmentation Method. """
+        return [mask_features(sample, **self.mask_params) for sample in features]
 
     def on_epoch_end(self):
         """ Invoke methods at the end of the each epoch. The fit method should have: `shuffle=False`.
