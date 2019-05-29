@@ -91,7 +91,7 @@ class DataGenerator(Sequence):
 
     def _mask_features(self, features):
         """ SpecAugment: A Simple Data Augmentation Method. """
-        return [mask_features(sample, **self.mask_params) for sample in features]
+        return np.stack([mask_features(sample, **self.mask_params) for sample in features], axis=0)
 
     def on_epoch_end(self):
         """ Invoke methods at the end of the each epoch. The fit method should have: `shuffle=False`.
