@@ -1,43 +1,50 @@
-from typing import Tuple, List
+from typing import List
 
 import numpy as np
 import pandas as pd
 import h5py
+from tqdm import tqdm
+from tabulate import tabulate
 
-from decoding import BestPathDecoder, CTCDecoder, naive_decode
+from decoding import BestPathDecoder, CTCDecoder
 from text import Alphabet
 from metric import get_metrics
 
 
 ACTIVATION_PATH = '../scripts/evaluation-clarin-without-activations.hdf5'
 ALPHABET = Alphabet(file_path='../models/pl/alphabet.txt')
+LIMIT = -1  # Number of samples to use for evaluation (-1 for all)
 
 
-def load_data(file_path: str, limit=None) -> Tuple[pd.Series, pd.Series, List[np.ndarray]]:
-    with pd.HDFStore(file_path, mode='r') as hdfs_store:
-        transcripts = hdfs_store['references']['transcript']
-        cer = hdfs_store['references']['cer']
-    with h5py.File(file_path, 'r') as file:
-        activations = file['outputs/1']
-        activations = list(activation[:] for activation in activations.values())
-    if limit is not None:
-        transcripts, cer, activations = transcripts[:limit], cer[:limit], activations[:limit]
-    return transcripts, cer, activations
+def get_references(fname: str) -> pd.DataFrame:
+    with pd.HDFStore(fname, mode='r') as store:
+        return store['references']
 
 
-transcripts, cer, activations = load_data(file_path=ACTIVATION_PATH, limit=10)
+def read_probabilities(fname: str, references: pd.DataFrame) -> List[np.ndarray]:
+    with h5py.File(fname, mode='r') as store:
+        output_index = 1
+        return [store[f'outputs/{output_index}/{sample_id}'][:]
+                for sample_id in tqdm(references.index)]
+
+
+references = get_references(ACTIVATION_PATH)
+probs = read_probabilities(ACTIVATION_PATH, references)
+transcripts = references['transcript']
 
 
 decoders = [
-    BestPathDecoder(config={'alphabet': ALPHABET}),
-    CTCDecoder(language_model=None, config={'alphabet': ALPHABET}),
+    ('Best-path decoding', BestPathDecoder(config={'alphabet': ALPHABET})),
+    ('CTC decoding w/o lm', CTCDecoder(language_model=None, config={'alphabet': ALPHABET})),
 ]
-for decoder in decoders:
-    print()
-    print(decoder)
-    print()
-    for probs, transcript in zip(activations, transcripts):
-        decoded_transcript, loss = decoder.decode(probs)
-        metrics = get_metrics([decoded_transcript], [transcript])
-        print(transcript, '<->', decoded_transcript, list(metrics))
+results = []
+for name, decoder in decoders:
+    decoded_transcripts = [transcript for transcript, _ in decoder.batch_decode(probs[:LIMIT])]
+    metrics = list(get_metrics(decoded_transcripts, transcripts[:LIMIT]))
+    avg_cer = sum(metric.wer for metric in metrics)/len(metrics)
+    avg_wer = sum(metric.cer for metric in metrics)/len(metrics)
+    results.append((name, avg_cer, avg_wer))
+print(tabulate(results, headers=['name', 'cer', 'wer'], tablefmt="grid"))
+
+
 

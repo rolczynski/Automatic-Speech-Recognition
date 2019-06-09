@@ -21,6 +21,9 @@ class Decoder:
     def decode(self, probs: np.ndarray) -> Tuple[str, float]:
         pass
 
+    def batch_decode(self, probs_batch: np.ndarray) -> Tuple[str, float]:
+        return [self.decode(probs) for probs in probs_batch]
+
 
 class LanguageModel:
 
@@ -155,6 +158,30 @@ class CTCDecoder(Decoder):
         a_max = max(args)
         lsp = math.log(sum(math.exp(a - a_max) for a in args))
         return a_max + lsp
+
+
+class TensorflowCTCDecoder:
+
+    def __init__(
+        self,
+        output_tensor,
+        beam_size=1024,
+        language_model: Optional['LanguageModel'],
+        config: Dict[str, Any]
+    ):
+        sequence_length = get_length(tf.reduce_max(output_tensor, 2))
+        top_k_decoded, _ = K.ctc_decode(output_tensor, sequence_length, greedy=False, beam_width=beam_size)
+        self.decoder = K.function([output_tensor], [top_k_decoded[0]])
+
+    def decode(self, probs: np.ndarray) -> Tuple[str, float]:
+        return self.decoder([probs])
+
+    def batch_decode(self, probs_batch: np.ndarray) -> Tuple[str, float]:
+        pass
+
+    def _get_length(tensor):
+        lengths = tf.reduce_sum(tf.ones_like(tensor), 1)
+        return tf.cast(lengths, tf.int32)
 
 
 def batch_tensorflow_decode(y_hat, decoder: Callable, alphabet: Alphabet):
