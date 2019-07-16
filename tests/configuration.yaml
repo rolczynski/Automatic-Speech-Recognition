@@ -22,3 +22,9 @@ callbacks:
 decoder:
   name: tensorflow
   beam_size: 64
+
+extension:
+  layers:
+    - name: LSTM
+      units: 64
+      return_sequences: True
