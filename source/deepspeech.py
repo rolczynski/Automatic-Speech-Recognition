@@ -80,12 +80,6 @@ class DeepSpeech:
         """ Convert labels to transcripts. """
         return self.alphabet.get_batch_transcripts(labels)
 
-    def create_generator(self, file_path, source='from_audio_files', **kwargs) -> DataGenerator:
-        """ Create generator from audio files (csv file) or prepared features (hdf5 file). """
-        _create_generator = getattr(DataGenerator, source)
-        return _create_generator(file_path, alphabet=self.alphabet, features_extractor=self.features_extractor,
-                                 **kwargs)
-
     def fit(self, train_generator, dev_generator, **kwargs) -> History:
         """ Train model using train and dev data generators base on the Keras method."""
         return self.compiled_model.fit_generator(generator=train_generator,

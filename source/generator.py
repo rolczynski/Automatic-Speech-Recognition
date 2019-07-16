@@ -1,3 +1,5 @@
+from typing import List
+
 import h5py
 import numpy as np
 import pandas as pd
@@ -103,3 +105,45 @@ class DataGenerator(Sequence):
         """ Set up the order of next batches """
         if self.epoch >= self._shuffle_after_epoch:
             np.random.shuffle(self.indices)
+
+
+class DistributedDataGenerator(Sequence):
+
+    def __init__(self, generators: List[DataGenerator]):
+        self._generators = generators
+        self._generator_sizes = [len(generator) for generator in self._generators]
+        self._generator_limits = np.cumsum(self._generator_sizes)
+        self.epoch = 0
+        self.indices = np.arange(len(self))
+
+    @classmethod
+    def from_audio_files(cls, file_paths: List[str], **kwargs):
+        generators = []
+        for file_path in file_paths:
+            generator = DataGenerator.from_audio_files(file_path, **kwargs)
+            generators.append(generator)
+        return cls(generators)
+
+    @classmethod
+    def from_prepared_features(cls, file_paths: List[str], **kwargs):
+        generators = []
+        for file_path in file_paths:
+            generator = DataGenerator.from_prepared_features(file_path, **kwargs)
+            generators.append(generator)
+        return cls(generators)
+
+    def __len__(self):
+        """ Denotes the number of batches per epoch. """
+        return sum(self._generator_sizes)
+
+    def __getitem__(self, next_index):
+        """ Operator to get the batch data. """
+        generator_index = np.searchsorted(self._generator_limits, next_index)
+        generator = self._generators[generator_index]
+        relative_index = next_index - self._generator_limits[generator_index-1]
+        return generator[relative_index]
+
+    def on_epoch_end(self):
+        self.epoch += 1
+        for generator in self._generators:
+            generator.on_epoch_end()
