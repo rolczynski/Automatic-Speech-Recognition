@@ -19,4 +19,5 @@ def test_distributed_generator(generator: DataGenerator):
         generators=[copy(generator) for i in range(5)]
     )
     assert len(generator) == 10
+    assert generator[0]
     assert generator[9]

@@ -140,8 +140,11 @@ class DistributedDataGenerator(Sequence):
         """ Operator to get the batch data. """
         generator_index = np.searchsorted(self._generator_limits, next_index)
         generator = self._generators[generator_index]
-        relative_index = next_index - self._generator_limits[generator_index-1]
-        return generator[relative_index]
+        if generator_index == 0:
+            return generator[next_index]
+        else:
+            relative_index = next_index - self._generator_limits[generator_index-1]
+            return generator[relative_index]
 
     def on_epoch_end(self):
         self.epoch += 1
