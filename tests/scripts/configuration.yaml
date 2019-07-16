@@ -1,0 +1,87 @@
+
+# Define how audio files are processing.
+features_extractor:
+  winlen: 0.025
+  winstep: 0.01
+  nfilt: 80
+  winfunc: hamming
+
+
+# Custom architecture can be created using `deepspeech-custom`.
+model:
+  name: deepspeech-custom
+  input_dim: 80
+  layers:
+    - name: expand_dims
+      axis: -1
+    - name: ZeroPadding2D
+      padding: [7, 20]
+    - name: Conv2D
+      filters: 32
+      kernel_size: [15, 41]
+      strides: [2, 2]
+    - name: squeeze_last_dims
+      units: 1280
+    - name: LSTM
+      units: 50
+      return_sequences: True
+    - name: LSTM
+      units: 50
+      return_sequences: True
+    - name: LSTM
+      units: 50
+      return_sequences: True
+    - name: LSTM
+      units: 50
+      return_sequences: True
+    - name: LSTM
+      units: 50
+      return_sequences: True
+
+
+# The available optimizers are specified in: `get_optimizer` and
+# come from `keras.optimizers` module.
+optimizer:
+  name: adam
+  lr: 0.001 # 1E-3
+  beta_1: 0.9
+  beta_2: 0.999
+  epsilon: 0.00000001
+
+
+# Set callbacks to get a view on internal states and statistics of the model
+# during training.
+callbacks:
+- name: TerminateOnNaN
+
+- name: ResultKeeper
+  file_name: results.bin
+
+- name: CustomModelCheckpoint
+  dir_name: checkpoints
+
+
+# Define method of decoding probabilities into transcription
+decoder:
+  name: tensorflow
+  beam_size: 1024
+
+
+# Define extension layers used during tunning the model
+extension:
+  layers:
+    - name: LSTM
+      units: 50
+      return_sequences: True
+    - name: LSTM
+      units: 50
+      return_sequences: True
+    - name: LSTM
+      units: 50
+      return_sequences: True
+    - name: LSTM
+      units: 50
+      return_sequences: True
+    - name: LSTM
+      units: 50
+      return_sequences: True

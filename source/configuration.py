@@ -20,6 +20,10 @@ class Configuration:
         self.optimizer = self._data.get('optimizer')
         self.decoder = self._data.get('decoder')
 
+    @property
+    def data(self):
+        return self._data
+
     def _read_yaml_file(self) -> Dict:
         """ Read YAML configuration file """
         with open(self._file_path, 'r') as stream:

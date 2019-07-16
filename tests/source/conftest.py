@@ -8,7 +8,7 @@ is_same = lambda A, B: all(np.array_equal(a, b) for a, b in zip(A, B))
 
 @pytest.fixture
 def model_dir() -> str:
-    return 'tests/models/test/'
+    return 'tests/source/'
 
 
 @pytest.fixture
