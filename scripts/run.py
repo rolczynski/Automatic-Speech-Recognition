@@ -1,5 +1,7 @@
 import os
 import argparse
+
+from source.generator import DataGenerator, DistributedDataGenerator
 from source.deepspeech import DeepSpeech
 from source.utils import chdir, create_logger
 
@@ -10,6 +12,7 @@ def parse_arguments():
     parser.add_argument('--train', required=True, help='Train source (csv/hdf5 file)')
     parser.add_argument('--dev', required=True, help='Dev source (csv/hdf5 file)')
     parser.add_argument('--source', choices=['from_audio_files', 'from_prepared_features'], required=True)
+    parser.add_argument('--source_distributed', dest='source_distributed', action='store_true')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size (int)')
     parser.add_argument('--epochs', type=int, default=25, help='Epochs during training')
     parser.add_argument('--shuffle_after_epoch', type=int, default=1, help='Shuffle generator indices after epoch')
@@ -25,17 +28,38 @@ def parse_arguments():
     return args
 
 
+def create_generators(deepspeech: DeepSpeech, args):
+    train_gen_params = dict(
+        alphabet=deepspeech.alphabet,
+        features_extractor=deepspeech.features_extractor,
+        batch_size=args.batch_size,
+        shuffle_after_epoch=args.shuffle_after_epoch,
+        mask=args.mask,
+        mask_params=dict(F=args.mask_F, mf=args.mask_mf, T=args.mask_T,
+                         mt=args.mask_mt, ratio_t=args.mask_ratio_t)
+    )
+    if args.source_distributed:
+        generator_constructor = getattr(DistributedDataGenerator, args.source)
+        train_gen_params['file_paths'] = args.train.split(',')
+    else:
+        generator_constructor = getattr(DataGenerator, args.source)
+        train_gen_params['file_path'] = args.train
+
+    train_generator = generator_constructor(**train_gen_params)
+    dev_generator = generator_constructor(
+        args.dev,
+        alphabet=deepspeech.alphabet,
+        features_extractor=deepspeech.features_extractor,
+        batch_size=args.batch_size
+    )
+    return train_generator, dev_generator
+
+
 def main(args):
     deepspeech = DeepSpeech.construct(config_path=config_path, alphabet_path=alphabet_path)
     if args.pretrained_weights:
         deepspeech.load(args.pretrained_weights)
-
-    train_generator = deepspeech.create_generator(args.train, batch_size=args.batch_size, source=args.source,
-                                                  shuffle_after_epoch=args.shuffle_after_epoch, mask=args.mask,
-                                                  mask_params=dict(F=args.mask_F, mf=args.mask_mf, T=args.mask_T,
-                                                                   mt=args.mask_mt, ratio_t=args.mask_ratio_t))
-    dev_generator = deepspeech.create_generator(args.dev, batch_size=args.batch_size, source=args.source)
-
+    train_generator, dev_generator = create_generators(deepspeech, args)
     deepspeech.fit(train_generator, dev_generator, epochs=args.epochs, shuffle=False)
     deepspeech.save(weights_path)
 

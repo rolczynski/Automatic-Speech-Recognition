@@ -1,31 +1,11 @@
 import os
-import argparse
 import numpy as np
 from tensorflow import set_random_seed
+
+from scripts.run import parse_arguments, create_generators
 from source.deepspeech import DeepSpeech, Configuration, get_available_gpus
 from source.model import CuDNNLSTM, Bidirectional, Dense, TimeDistributed, Model, ReLU, LSTM, BatchNormalization
 from source.utils import chdir, create_logger
-
-
-def parse_arguments():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--model_dir', required=True, help='DeepSpeech model directory')
-    parser.add_argument('--train', required=True, help='Train source (csv/hdf5 file)')
-    parser.add_argument('--dev', required=True, help='Dev source (csv/hdf5 file)')
-    parser.add_argument('--source', choices=['from_audio_files', 'from_prepared_features'], required=True)
-    parser.add_argument('--batch_size', type=int, default=64, help='Batch size (int)')
-    parser.add_argument('--epochs', type=int, default=25, help='Epochs during training')
-    parser.add_argument('--shuffle_after_epoch', type=int, default=1, help='Shuffle generator indices after epoch')
-    parser.add_argument('--pretrained_weights', help='Use weights from the pretrained model')
-    parser.add_argument('--mask', dest='mask', action='store_true', help='Mask features during training')
-    parser.add_argument('--mask_F', type=int)
-    parser.add_argument('--mask_mf', type=int)
-    parser.add_argument('--mask_T', type=int)
-    parser.add_argument('--mask_mt', type=int)
-    parser.add_argument('--mask_ratio_t', type=float)
-    parser.add_argument('--log_level', type=int, default=20, help='Log level')
-    args = parser.parse_args()
-    return args
 
 
 def freeze(model: Model):
@@ -76,12 +56,7 @@ def main(args):
     gpus = get_available_gpus()
     deepspeech.compiled_model = DeepSpeech.compile_model(extended_model, optimizer, loss, gpus)
 
-    train_generator = deepspeech.create_generator(args.train, batch_size=args.batch_size, source=args.source,
-                                                  shuffle_after_epoch=args.shuffle_after_epoch, mask=args.mask,
-                                                  mask_params=dict(F=args.mask_F, mf=args.mask_mf, T=args.mask_T,
-                                                                   mt=args.mask_mt, ratio_t=args.mask_ratio_t))
-    dev_generator = deepspeech.create_generator(args.dev, batch_size=args.batch_size, source=args.source)
-
+    train_generator, dev_generator = create_generators(deepspeech, args)
     deepspeech.fit(train_generator, dev_generator, epochs=args.epochs, shuffle=False)
     deepspeech.save(weights_path)
 

@@ -11,6 +11,7 @@ import pandas as pd
 from tqdm import tqdm
 from keras import backend as K
 from keras.models import Model
+from source.generator import DataGenerator
 from source.deepspeech import DeepSpeech
 from source.metric import Metric, get_metrics
 from source.utils import chdir, load, create_logger
@@ -73,8 +74,12 @@ def evaluate(deepspeech: DeepSpeech, generator: Iterable, save_activations: bool
 def main(store_path: str, model_dir: str, features_store_path: str, batch_size: int, save_activations: bool):
     """ Evaluate model using prepared features. """
     deepspeech = load(model_dir)
-    generator = deepspeech.create_generator(features_store_path, source='from_prepared_features', batch_size=batch_size)
-
+    generator = DataGenerator.from_prepared_features(
+        features_store_path,
+        alphabet=deepspeech.alphabet,
+        features_extractor=deepspeech.features_extractor,
+        batch_size=batch_size
+    )
     units = calculate_units(deepspeech.model)
     logger.info(f'Model contains: {units//1e6:.0f}M units ({units})')
 
