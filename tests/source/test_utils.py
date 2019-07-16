@@ -1,6 +1,7 @@
 import os
 from deepspeech import DeepSpeech
-from source.utils import load, get_root_dir
+from source.utils import load, get_root_dir, chdir
+chdir(to='ROOT')
 
 
 def test_get_root_dir():
@@ -10,5 +11,5 @@ def test_get_root_dir():
 
 
 def test_utils_load():
-    deepspeech = load('tests/models/test')      # Or call via: model name
-    assert isinstance(deepspeech, DeepSpeech)   # (but has to be in the models directory)
+    deepspeech = load('tests')                          # Or call via: model name
+    assert isinstance(deepspeech, DeepSpeech)           # (but has to be in the models directory)

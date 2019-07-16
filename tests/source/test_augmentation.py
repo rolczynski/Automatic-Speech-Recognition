@@ -1,8 +1,12 @@
+from typing import List
+
 import pytest
 import numpy as np
 from matplotlib import pyplot as plt
 from source.audio import FeaturesExtractor
 import augmentation
+from source.utils import chdir
+chdir(to='ROOT')
 
 
 def plot(features):
@@ -12,7 +16,7 @@ def plot(features):
 
 
 @pytest.fixture
-def features():
+def features(audio_file_paths: List[str]):
     feature_extractor = FeaturesExtractor(
         winlen=0.025,
         winstep=0.01,
@@ -20,7 +24,7 @@ def features():
         winfunc='hamming'
     )
     feat = feature_extractor.get_features(
-        files=['tests/data/audio/sent000.wav']
+        files=[audio_file_paths[0]]
     )[0]
     return (feat-feat.mean(axis=0)) / feat.std(axis=0)
 

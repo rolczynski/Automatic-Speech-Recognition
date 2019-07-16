@@ -1,0 +1,24 @@
+
+features_extractor:
+  winlen: 0.025
+  winstep: 0.01
+  nfilt: 80
+  winfunc: hamming
+
+model:
+  name: deepspeech
+  units: 64
+
+optimizer:
+  name: adam
+  lr: 0.01
+
+callbacks:
+- name: TerminateOnNaN
+
+- name: CustomModelCheckpoint
+  dir_name: checkpoints
+
+decoder:
+  name: tensorflow
+  beam_size: 64
