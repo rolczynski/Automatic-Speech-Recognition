@@ -13,7 +13,6 @@ from keras.backend.tensorflow_backend import _get_available_gpus as get_availabl
 from source import audio, model, text, ctc_decoder, configuration, utils
 from source.text import Alphabet
 from source.audio import FeaturesExtractor
-from source.generator import DataGenerator
 from source.callbacks import CustomModelCheckpoint, CustomTensorBoard, CustomEarlyStopping, ResultKeeper
 from source.configuration import Configuration
 

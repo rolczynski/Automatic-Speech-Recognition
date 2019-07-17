@@ -52,6 +52,7 @@ def main(args):
     optimizer = DeepSpeech.get_optimizer(**config.optimizer)
     loss = DeepSpeech.get_loss()
     gpus = get_available_gpus()
+    deepspeech.model = extended_model
     deepspeech.compiled_model = DeepSpeech.compile_model(extended_model, optimizer, loss, gpus)
 
     if args.pretrained_weights:
