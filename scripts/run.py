@@ -46,7 +46,7 @@ def create_generators(deepspeech: DeepSpeech, args):
         train_gen_params['file_path'] = args.train
 
     train_generator = generator_constructor(**train_gen_params)
-    dev_generator = generator_constructor(
+    dev_generator = getattr(DataGenerator, args.source)(        # Dev generator can not be distributed
         args.dev,
         alphabet=deepspeech.alphabet,
         features_extractor=deepspeech.features_extractor,
