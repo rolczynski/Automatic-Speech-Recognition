@@ -60,9 +60,9 @@ class DataGenerator(Sequence):
         """ Denotes the number of batches per epoch. """
         return int(np.floor(len(self._references.index) / self._batch_size))
 
-    def __getitem__(self, next_index):
+    def __getitem__(self, index):
         """ Operator to get the batch data. """
-        batch_index = self.indices[next_index]
+        batch_index = self.indices[index]
         return self._get_batch(batch_index)
 
     def _get_batch(self, index):
@@ -115,6 +115,7 @@ class DistributedDataGenerator(Sequence):
         self._generator_limits = np.cumsum(self._generator_sizes)
         self.epoch = 0
         self.indices = np.arange(len(self))
+        np.random.shuffle(self.indices)
 
     @classmethod
     def from_audio_files(cls, file_paths: List[str], **kwargs):
@@ -136,8 +137,9 @@ class DistributedDataGenerator(Sequence):
         """ Denotes the number of batches per epoch. """
         return sum(self._generator_sizes)
 
-    def __getitem__(self, next_index):
+    def __getitem__(self, index):
         """ Operator to get the batch data. """
+        next_index = self.indices[index]
         generator_index = np.searchsorted(self._generator_limits, next_index)
         generator = self._generators[generator_index]
         if generator_index == 0:
@@ -147,6 +149,7 @@ class DistributedDataGenerator(Sequence):
             return generator[relative_index]
 
     def on_epoch_end(self):
+        np.random.shuffle(self.indices)
         self.epoch += 1
         for generator in self._generators:
             generator.on_epoch_end()
