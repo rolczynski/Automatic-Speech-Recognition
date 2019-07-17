@@ -78,7 +78,10 @@ def main(store_path: str, model_dir: str, features_store_path: str, batch_size: 
         features_store_path,
         alphabet=deepspeech.alphabet,
         features_extractor=deepspeech.features_extractor,
-        batch_size=batch_size
+        batch_size=batch_size,
+        mask=args.mask,
+        mask_params=dict(F=args.mask_F, mf=args.mask_mf, T=args.mask_T,
+                         mt=args.mask_mt, ratio_t=args.mask_ratio_t)
     )
     units = calculate_units(deepspeech.model)
     logger.info(f'Model contains: {units//1e6:.0f}M units ({units})')
@@ -97,6 +100,12 @@ if __name__ == '__main__':
     parser.add_argument('--log_file', help='Log file')
     parser.add_argument('--log_level', type=int, default=20, help='Log level')
     parser.add_argument('--save_activations', dest='save_activations', action='store_true', help='Save all activation through evaluation')
+    parser.add_argument('--mask', dest='mask', action='store_true', help='Mask features during training')
+    parser.add_argument('--mask_F', type=int)
+    parser.add_argument('--mask_mf', type=int)
+    parser.add_argument('--mask_T', type=int)
+    parser.add_argument('--mask_mt', type=int)
+    parser.add_argument('--mask_ratio_t', type=float)
     args = parser.parse_args()
     chdir(to='ROOT')
 
