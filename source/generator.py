@@ -140,13 +140,13 @@ class DistributedDataGenerator(Sequence):
     def __getitem__(self, index):
         """ Operator to get the batch data. """
         next_index = self.indices[index]
-        generator_index = np.searchsorted(self._generator_limits, next_index)
+        generator_index = np.searchsorted(self._generator_limits, next_index, side='right')     # Right side because limits are based on the lengths, not indices
         generator = self._generators[generator_index]
         if generator_index == 0:
-            return generator[next_index]
+            gen_index = next_index
         else:
-            relative_index = next_index - self._generator_limits[generator_index-1]
-            return generator[relative_index]
+            gen_index = next_index - self._generator_limits[generator_index-1]
+        return generator[gen_index]
 
     def on_epoch_end(self):
         np.random.shuffle(self.indices)
