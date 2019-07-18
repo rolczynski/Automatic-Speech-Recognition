@@ -17,6 +17,25 @@ from source.metric import Metric, get_metrics
 from source.utils import chdir, load, create_logger
 
 
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--store', required=True, help='File hdf5 keeps evaluation results')
+    parser.add_argument('--model_dir', required=True, help='Pretrained model directory')
+    parser.add_argument('--features_store', required=True, help='HDF5 Store with precomputed features')
+    parser.add_argument('--batch_size', type=int, required=True, help='Batch size (depends on model) should be the same as during training')
+    parser.add_argument('--log_file', help='Log file')
+    parser.add_argument('--log_level', type=int, default=20, help='Log level')
+    parser.add_argument('--save_activations', dest='save_activations', action='store_true', help='Save all activation through evaluation')
+    parser.add_argument('--mask', dest='mask', action='store_true', help='Mask features during training')
+    parser.add_argument('--mask_F', type=int)
+    parser.add_argument('--mask_mf', type=int)
+    parser.add_argument('--mask_T', type=int)
+    parser.add_argument('--mask_mt', type=int)
+    parser.add_argument('--mask_ratio_t', type=float)
+    args = parser.parse_args()
+    return args
+
+
 def calculate_units(model: Model) -> int:
     """ Calculate number of the model parameters. """
     units = 0
@@ -71,7 +90,8 @@ def evaluate(deepspeech: DeepSpeech, generator: Iterable, save_activations: bool
     return metrics
 
 
-def main(store_path: str, model_dir: str, features_store_path: str, batch_size: int, save_activations: bool):
+def main(store_path: str, model_dir: str, features_store_path: str, batch_size: int, save_activations: bool,
+         mask: bool, mask_F: int, mask_mf: int, mask_T: int, mask_mt: int, mask_ratio_t: float):
     """ Evaluate model using prepared features. """
     deepspeech = load(model_dir)
     generator = DataGenerator.from_prepared_features(
@@ -79,9 +99,9 @@ def main(store_path: str, model_dir: str, features_store_path: str, batch_size: 
         alphabet=deepspeech.alphabet,
         features_extractor=deepspeech.features_extractor,
         batch_size=batch_size,
-        mask=args.mask,
-        mask_params=dict(F=args.mask_F, mf=args.mask_mf, T=args.mask_T,
-                         mt=args.mask_mt, ratio_t=args.mask_ratio_t)
+        mask=mask,
+        mask_params=dict(F=mask_F, mf=mask_mf, T=mask_T,
+                         mt=mask_mt, ratio_t=mask_ratio_t)
     )
     units = calculate_units(deepspeech.model)
     logger.info(f'Model contains: {units//1e6:.0f}M units ({units})')
@@ -92,23 +112,26 @@ def main(store_path: str, model_dir: str, features_store_path: str, batch_size: 
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--store', required=True, help='File hdf5 keeps evaluation results')
-    parser.add_argument('--model_dir', required=True, help='Pretrained model directory')
-    parser.add_argument('--features_store', required=True, help='HDF5 Store with precomputed features')
-    parser.add_argument('--batch_size', type=int, required=True, help='Batch size (depends on model) should be the same as during training')
-    parser.add_argument('--log_file', help='Log file')
-    parser.add_argument('--log_level', type=int, default=20, help='Log level')
-    parser.add_argument('--save_activations', dest='save_activations', action='store_true', help='Save all activation through evaluation')
-    parser.add_argument('--mask', dest='mask', action='store_true', help='Mask features during training')
-    parser.add_argument('--mask_F', type=int)
-    parser.add_argument('--mask_mf', type=int)
-    parser.add_argument('--mask_T', type=int)
-    parser.add_argument('--mask_mt', type=int)
-    parser.add_argument('--mask_ratio_t', type=float)
-    args = parser.parse_args()
+    ARGUMENTS = parse_arguments()
     chdir(to='ROOT')
 
-    logger = create_logger(args.log_file, level=args.log_level, name='evaluate')
-    logger.info(f'Arguments: \n{args}')
-    main(args.store, args.model_dir, args.features_store, args.batch_size, args.save_activations)
+    CONFIG_PATH = os.path.join(ARGUMENTS.model_dir, 'configuration.yaml')
+    ALPHABET_PATH = os.path.join(ARGUMENTS.model_dir, 'alphabet.txt')
+    WEIGHTS_PATH = os.path.join(ARGUMENTS.model_dir, 'weights.hdf5')
+
+    logger = create_logger(ARGUMENTS.log_path, level=ARGUMENTS.log_level, name='evaluate')
+    logger.info(f'Arguments: \n{ARGUMENTS}')
+
+    main(
+        store_path=ARGUMENTS.store,
+        model_dir=ARGUMENTS.model_dir,
+        features_store_path=ARGUMENTS.features_store,
+        batch_size=ARGUMENTS.batch_size,
+        save_activations=ARGUMENTS.save_activations,
+        mask=ARGUMENTS.mask,
+        mask_F=ARGUMENTS.mask_F,
+        mask_mf=ARGUMENTS.mask_mf,
+        mask_T=ARGUMENTS.mask_T,
+        mask_mt=ARGUMENTS.mask_mt,
+        mask_ratio_t=ARGUMENTS.mask_ratio_t
+    )
