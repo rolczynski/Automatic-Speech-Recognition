@@ -42,13 +42,13 @@ def create_extended_model(model: Model, configuration: Configuration, is_gpu: bo
 
 
 def main(args):
-    deepspeech = DeepSpeech.construct(config_path=config_path, alphabet_path=alphabet_path)
+    deepspeech = DeepSpeech.construct(config_path=CONFIG_PATH, alphabet_path=ALPHABET_PATH)
     if args.pretrained_weights:
         deepspeech.load(args.pretrained_weights)
 
     freeze(deepspeech.model)
     gpus = get_available_gpus()
-    config = Configuration(config_path)
+    config = Configuration(CONFIG_PATH)
     extended_model = create_extended_model(deepspeech.model, config, is_gpu=len(gpus) > 0)
 
     optimizer = DeepSpeech.get_optimizer(**config.optimizer)
@@ -59,16 +59,19 @@ def main(args):
 
     train_generator, dev_generator = create_generators(deepspeech, args)
     deepspeech.fit(train_generator, dev_generator, epochs=args.epochs, shuffle=False)
-    deepspeech.save(weights_path)
+    deepspeech.save(WEIGHTS_PATH)
 
 
 if __name__ == "__main__":
     chdir(to='ROOT')
-    arguments = parse_arguments()
-    log_path = os.path.join(arguments.model_dir, 'training.log')
-    config_path = os.path.join(arguments.model_dir, 'configuration.yaml')
-    alphabet_path = os.path.join(arguments.model_dir, 'alphabet.txt')
-    weights_path = os.path.join(arguments.model_dir, 'weights.hdf5')
-    logger = create_logger(log_path, level=arguments.log_level, name='deepspeech')
-    logger.info(f'Arguments: \n{arguments}')
-    main(arguments)
+    ARGUMENTS = parse_arguments()
+
+    LOG_PATH = os.path.join(ARGUMENTS.model_dir, 'training.log')
+    CONFIG_PATH = os.path.join(ARGUMENTS.model_dir, 'configuration.yaml')
+    ALPHABET_PATH = os.path.join(ARGUMENTS.model_dir, 'alphabet.txt')
+    WEIGHTS_PATH = os.path.join(ARGUMENTS.model_dir, 'weights.hdf5')
+
+    logger = create_logger(LOG_PATH, level=ARGUMENTS.log_level, name='deepspeech')
+    logger.info(f'Arguments: \n{ARGUMENTS}')
+
+    main(ARGUMENTS)
