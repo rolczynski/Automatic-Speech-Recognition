@@ -5,7 +5,7 @@ from source.deepspeech import DeepSpeech, Configuration, get_available_gpus
 from source.utils import chdir, create_logger
 
 
-def load_extended_model(config_path, alphabet_path, weights_path):
+def load_extended_model(config_path, alphabet_path, pretrained_weights):
     deepspeech = DeepSpeech.construct(config_path=config_path, alphabet_path=alphabet_path)
 
     freeze(deepspeech.model)
@@ -18,12 +18,12 @@ def load_extended_model(config_path, alphabet_path, weights_path):
     gpus = get_available_gpus()
     deepspeech.model = extended_model
     deepspeech.compiled_model = DeepSpeech.compile_model(extended_model, optimizer, loss, gpus)
-    deepspeech.load(weights_path)
+    deepspeech.load(pretrained_weights)
     return deepspeech
 
 
 def main(args):
-    deepspeech = load_extended_model(CONFIG_PATH, ALPHABET_PATH, WEIGHTS_PATH)
+    deepspeech = load_extended_model(CONFIG_PATH, ALPHABET_PATH, args.pretrained_weights)
     train_generator, dev_generator = create_generators(deepspeech, args)
     deepspeech.fit(train_generator, dev_generator, epochs=args.epochs, shuffle=False)
     deepspeech.save(WEIGHTS_PATH)
