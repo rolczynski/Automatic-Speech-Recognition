@@ -119,7 +119,7 @@ if __name__ == '__main__':
     ALPHABET_PATH = os.path.join(ARGUMENTS.model_dir, 'alphabet.txt')
     WEIGHTS_PATH = os.path.join(ARGUMENTS.model_dir, 'weights.hdf5')
 
-    logger = create_logger(ARGUMENTS.log_path, level=ARGUMENTS.log_level, name='evaluate')
+    logger = create_logger(ARGUMENTS.log_file, level=ARGUMENTS.log_level, name='evaluate')
     logger.info(f'Arguments: \n{ARGUMENTS}')
 
     main(

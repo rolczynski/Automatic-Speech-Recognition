@@ -2,7 +2,7 @@ import os
 # Activation can not be handled using distrubuted model (few GPUs). First GPU selected.
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 from source.generator import DataGenerator
-from source.utils import chdir, load, create_logger
+from source.utils import chdir, create_logger
 from scripts.evaluate import parse_arguments, calculate_units, evaluate
 from scripts.run_extension_tune import load_extended_model
 
@@ -36,7 +36,7 @@ if __name__ == '__main__':
     ALPHABET_PATH = os.path.join(ARGUMENTS.model_dir, 'alphabet.txt')
     WEIGHTS_PATH = os.path.join(ARGUMENTS.model_dir, 'weights.hdf5')
 
-    logger = create_logger(ARGUMENTS.log_path, level=ARGUMENTS.log_level, name='evaluate')
+    logger = create_logger(ARGUMENTS.log_file, level=ARGUMENTS.log_level, name='evaluate')
     logger.info(f'Arguments: \n{ARGUMENTS}')
 
     main(
