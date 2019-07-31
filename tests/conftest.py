@@ -5,7 +5,8 @@ from typing import List
 
 from keras import Model
 
-from deepspeech import DeepSpeech, Configuration, Alphabet, DataGenerator
+from deepspeech import DeepSpeech, Configuration, Alphabet
+from generator import DataGenerator
 is_same = lambda A, B: all(np.array_equal(a, b) for a, b in zip(A, B))
 
 

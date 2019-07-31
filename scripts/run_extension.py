@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from keras import activations
 from tensorflow import set_random_seed
 
 from scripts.run import parse_arguments, create_generators
@@ -27,7 +28,9 @@ def create_extended_model(model: Model, configuration: Configuration, is_gpu: bo
     }
 
     input_tensor = model.inputs[0]
-    x = model.layers[-2].output     # without softmax layer
+    base_output = model.layers[-1]                          # This is TimeDistributed softmax layer
+    base_output.layer.activation = activations.linear       # Change softmax to linear (avoid squash)
+    x = base_output.output
 
     layers = configuration.data['extension']['layers']
     for params in layers:

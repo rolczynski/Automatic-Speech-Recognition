@@ -9,7 +9,7 @@ def test_main(deepspeech: DeepSpeech, config: Configuration):
     freeze(deepspeech.model)
     gpus = get_available_gpus()
     extended_model = create_extended_model(deepspeech.model, config, is_gpu=len(gpus) > 0)
-    assert len(deepspeech.model.layers) + len(config.data['extension']['layers']) == len(extended_model.layers)
+    assert len(deepspeech.model.layers) + 1 + len(config.data['extension']['layers']) == len(extended_model.layers)
     *_, first_lstm, second_lstm, softmax = extended_model.layers
     assert not first_lstm.trainable
     assert second_lstm.trainable and softmax.trainable
