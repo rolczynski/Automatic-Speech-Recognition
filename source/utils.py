@@ -1,8 +1,10 @@
-import dill
 import os
 import logging
 from logging import Logger
 from typing import Callable, Any
+import h5py
+import dill
+from keras import Model
 
 
 def save(data: Any, file_name: str):
@@ -77,3 +79,13 @@ def pretrained_models(func: Callable) -> Callable:
             weights_path = os.path.join(model_dir, 'weights.hdf5')
         return func(deepspeech, weights_path)
     return load_wrapper
+
+
+def freeze(model: Model, weights_path: str):
+    with h5py.File(weights_path, mode='r') as f:
+        layer_names = set(layer_name.decode() for layer_name in f.attrs['layer_names'])
+        model_layer_names = set(layer.name for layer in model.layers)
+        to_freeze_layers = layer_names & model_layer_names
+        for layer_name in to_freeze_layers:
+            layer = model.get_layer(name=layer_name)
+            layer.trainable = False
