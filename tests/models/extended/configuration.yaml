@@ -1,0 +1,52 @@
+
+features_extractor:
+  winlen: 0.025
+  winstep: 0.01
+  nfilt: 80
+  winfunc: hamming
+
+model:
+  name: deepspeech-custom
+  input_dim: 80
+  layers:
+    - layer_name: expand_dims
+      axis: -1
+    - layer_name: ZeroPadding2D
+      padding: [7, 20]
+    - layer_name: Conv2D
+      name: base_1
+      filters: 2
+      kernel_size: [15, 41]
+      strides: [2, 2]
+    - layer_name: squeeze_last_dims
+      units: 80
+    - layer_name: LSTM
+      name: base_2
+      units: 10
+      return_sequences: True
+    - layer_name: Dense
+      name: base_3
+      units: 36
+      activation: linear
+    - layer_name: LSTM
+      name: extension_1
+      units: 10
+      return_sequences: True
+    - layer_name: Dense
+      name: extension_2
+      units: 36
+      activation: softmax
+
+optimizer:
+  name: adam
+  lr: 0.01
+
+callbacks:
+- name: TerminateOnNaN
+
+- name: CustomModelCheckpoint
+  dir_name: checkpoints
+
+decoder:
+  name: tensorflow
+  beam_size: 64
