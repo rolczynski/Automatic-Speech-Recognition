@@ -25,19 +25,18 @@ def chdir(to='ROOT'):
 
 
 def create_logger(file_path, level=20, name='deepspeech') -> Logger:
-    """ Create the logger with default"""
+    """ Create the logger and handlers both console and file. """
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
-    if file_path:
-        handler = logging.FileHandler(file_path, mode='w')
-    else:
-        handler = logging.StreamHandler()
-
     formater = logging.Formatter('%(asctime)s [%(levelname)-8s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-    handler.setFormatter(formater)
-    # handle all messages from logger (not set handler level)
-    logger.addHandler(handler)
+    console = logging.StreamHandler()
+    console.setFormatter(formater)
+    logger.addHandler(console)
+    if file_path:
+        file_handler = logging.FileHandler(file_path, mode='w')
+        file_handler.setFormatter(formater)
+        logger.addHandler(file_handler)     # handle all messages from logger (not set handler level)
     return logger
 
 
@@ -79,13 +78,3 @@ def pretrained_models(func: Callable) -> Callable:
             weights_path = os.path.join(model_dir, 'weights.hdf5')
         return func(deepspeech, weights_path)
     return load_wrapper
-
-
-def freeze(model: Model, weights_path: str):
-    with h5py.File(weights_path, mode='r') as f:
-        layer_names = set(layer_name.decode() for layer_name in f.attrs['layer_names'])
-        model_layer_names = set(layer.name for layer in model.layers)
-        to_freeze_layers = layer_names & model_layer_names
-        for layer_name in to_freeze_layers:
-            layer = model.get_layer(name=layer_name)
-            layer.trainable = False
