@@ -77,7 +77,7 @@ class CustomModelCheckpoint(Callback):
     def _set_best_weights_to_model(self, history):
         """ Set best weights to the model. Checkpoint callback save the best
         weights path. """
-        self.model.template_model.load_weights(self.best_weights_path)
+        self.template_model.load_weights(self.best_weights_path)
 
     on_train_end = _set_best_weights_to_model
 
