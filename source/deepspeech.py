@@ -206,7 +206,7 @@ class DeepSpeech:
 
             elif name == 'CustomModelCheckpoint':
                 log_dir = os.path.join(home_dir, configuration.pop('dir_name'))
-                callbacks.append(CustomModelCheckpoint(log_dir, model))
+                callbacks.append(CustomModelCheckpoint(model, log_dir))
 
             elif name == 'CustomTensorBoard':
                 log_dir = os.path.join(home_dir, configuration.pop('dir_name'))
