@@ -9,22 +9,22 @@ model:
   name: deepspeech-custom
   input_dim: 80
   layers:
-    - layer_name: expand_dims
+    - constructor: expand_dims
       axis: -1
-    - layer_name: ZeroPadding2D
+    - constructor: ZeroPadding2D
       padding: [7, 20]
-    - layer_name: Conv2D
+    - constructor: Conv2D
       name: base_1
       filters: 2
       kernel_size: [15, 41]
       strides: [2, 2]
-    - layer_name: squeeze_last_dims
+    - constructor: squeeze_last_dims
       units: 80
-    - layer_name: LSTM
+    - constructor: LSTM
       name: base_2
       units: 10
       return_sequences: True
-    - layer_name: Dense
+    - constructor: Dense
       name: base_3
       units: 36
       activation: softmax
