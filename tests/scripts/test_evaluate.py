@@ -5,7 +5,8 @@ import h5py
 import pandas as pd
 import numpy as np
 from keras.models import Model
-from source.deepspeech import DeepSpeech, DataGenerator
+from source.deepspeech import DeepSpeech
+from source.generator import DataGenerator
 from source.metric import Metric, get_metrics
 from scripts.evaluate import get_activations_function, save_in, evaluate
 from source.utils import chdir
