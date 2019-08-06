@@ -1,14 +1,15 @@
 import numpy as np
 
 
-def mask_features(features, F: int, mf: int, T: int,
+def mask_features(features, F: int = None, mf: int = None, T: int = None,
                   mt: int = None, ratio_t: float = None):
     """ SpecAugment: A Simple Data Augmentation Method. """
     time, channels = features.shape
-    features = mask_frequencies(features, channels, F, mf)
-    if ratio_t:     # Time dimension is chainging so ratio is more appropraite
+    if F and mf:
+        features = mask_frequencies(features, channels, F, mf)
+    if T and mt:
         features = mask_time_ratio(features, time, T, ratio_t)
-    else:
+    elif T and ratio_t:      # Time dimension is chainging so ratio is more appropraite
         features = mask_time(features, time, T, mt)
     return features
 
