@@ -8,9 +8,9 @@ def mask_features(features, F: int = None, mf: int = None, T: int = None,
     if F and mf:
         features = mask_frequencies(features, channels, F, mf)
     if T and mt:
-        features = mask_time_ratio(features, time, T, ratio_t)
-    elif T and ratio_t:      # Time dimension is chainging so ratio is more appropraite
         features = mask_time(features, time, T, mt)
+    elif T and ratio_t:      # Time dimension is chainging so ratio is more appropraite
+        features = mask_time_ratio(features, time, T, ratio_t)
     return features
 
 
