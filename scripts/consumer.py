@@ -21,8 +21,8 @@ def next_in(file_name):
 
 def execute(command):
     """ Execute a python script and waits for it to finish (security issue). """
-    handler, = logger.handlers
-    subprocess.run(f'{args.python} {command}'.split(), stderr=handler.stream, cwd=os.getcwd(), check=True)
+    console, = logger.handlers      # Consumer has only one handler because it is often run via nohup
+    subprocess.run(f'{args.python} {command}'.split(), stderr=console.stream, cwd=os.getcwd(), check=True)
 
 
 def run_consumer(queue):
@@ -47,12 +47,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--queue', required=True, help='The queue with tasks to execute')
     parser.add_argument('--python', required=True, help='The interpreter path')
-    parser.add_argument('--log_file', required=True, help='The log file')
-    parser.add_argument('--log_level', type=int, default=20, help='The log level (default set to INFO)')
     args = parser.parse_args()
 
-    logger = create_logger(args.log_file, args.log_level, name='consumer')
-
+    logger = create_logger(name='consumer')
     logger.info('The consumer has been started')
     logger.info(f'Execute the queue: {args.queue}')
 

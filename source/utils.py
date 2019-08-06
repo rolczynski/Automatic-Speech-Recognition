@@ -22,7 +22,7 @@ def chdir(to='ROOT'):
     os.chdir(new_cwd)
 
 
-def create_logger(file_path, level=20, name='deepspeech') -> Logger:
+def create_logger(file_path='', level=20, name='deepspeech') -> Logger:
     """ Create the logger and handlers both console and file. """
     logger = logging.getLogger(name)
     logger.setLevel(level)
@@ -30,11 +30,11 @@ def create_logger(file_path, level=20, name='deepspeech') -> Logger:
     formater = logging.Formatter('%(asctime)s [%(levelname)-8s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     console = logging.StreamHandler()
     console.setFormatter(formater)
-    logger.addHandler(console)
+    logger.addHandler(console)       # handle all messages from logger (not set handler level)
     if file_path:
         file_handler = logging.FileHandler(file_path, mode='w')
         file_handler.setFormatter(formater)
-        logger.addHandler(file_handler)     # handle all messages from logger (not set handler level)
+        logger.addHandler(file_handler)
     return logger
 
 

@@ -16,7 +16,7 @@ from source.text import Alphabet
 from source.audio import FeaturesExtractor
 from source.callbacks import CustomModelCheckpoint, CustomTensorBoard, CustomEarlyStopping, ResultKeeper
 from source.configuration import Configuration
-logger = logging.getLogger('deepspeech.DeepSpeech')
+logger = logging.getLogger('deepspeech')
 
 
 class DeepSpeech:
