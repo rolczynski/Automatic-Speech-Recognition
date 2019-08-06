@@ -1,13 +1,11 @@
 import os
 import pytest
-import numpy as np
 from typing import List
-
 from keras import Model
-
-from deepspeech import DeepSpeech, Configuration, Alphabet
-from generator import DataGenerator
-is_same = lambda A, B: all(np.array_equal(a, b) for a, b in zip(A, B))
+from source.deepspeech import DeepSpeech, Configuration, Alphabet
+from source.generator import DataGenerator
+from source.utils import chdir
+chdir(to='ROOT')
 
 
 @pytest.fixture
@@ -17,12 +15,12 @@ def test_dir() -> str:
 
 @pytest.fixture
 def config_path(test_dir) -> str:
-    return os.path.join(test_dir, 'configuration.yaml')
+    return os.path.join(test_dir, 'models', 'default', 'configuration.yaml')
 
 
 @pytest.fixture
 def alphabet_path(test_dir) -> str:
-    return os.path.join(test_dir, 'alphabet.txt')
+    return os.path.join(test_dir, 'models', 'default', 'alphabet.txt')
 
 
 @pytest.fixture
@@ -42,7 +40,7 @@ def deepspeech(config_path: str, alphabet_path: str) -> DeepSpeech:
 
 @pytest.fixture
 def model(deepspeech: DeepSpeech) -> Model:
-    return deepspeech.compiled_model
+    return deepspeech.model
 
 
 @pytest.fixture

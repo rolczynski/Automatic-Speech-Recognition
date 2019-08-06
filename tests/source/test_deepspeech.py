@@ -1,12 +1,8 @@
-import os
-import shutil
 import numpy as np
-import warnings
-warnings.simplefilter("ignore", category=DeprecationWarning)    # Tensorflow warnings
 from typing import List
 from keras.engine.training import Model
 from source.utils import chdir
-from source.deepspeech import DeepSpeech, Configuration, FeaturesExtractor, Alphabet, DataGenerator, History
+from source.deepspeech import DeepSpeech, Configuration, FeaturesExtractor, Alphabet
 is_same = lambda A, B: all(np.array_equal(a, b) for a, b in zip(A, B))
 chdir(to='ROOT')
 
@@ -43,8 +39,8 @@ def test_compile_model(config: Configuration):
     model = DeepSpeech.get_model(**config.model, is_gpu=False)
     optimizer = DeepSpeech.get_optimizer(**config.optimizer)
     loss = DeepSpeech.get_loss()
-    compiled_model = DeepSpeech.compile_model(model, optimizer, loss, gpus=[])
-    assert compiled_model._is_compiled
+    DeepSpeech.compile_model(model, optimizer, loss)
+    assert model._is_compiled
 
 
 def test_get_features(deepspeech: DeepSpeech, audio_file_paths: List[str]):
@@ -63,32 +59,6 @@ def test_get_labels_and_get_transcripts(deepspeech: DeepSpeech):
     assert transformed_transcripts == correct_transcripts
 
 
-def test_fit(deepspeech: DeepSpeech, generator: DataGenerator, config_path: str, alphabet_path: str, test_dir: str):
-    # Test save best weights (overwrite the best result)
-    weights_path = os.path.join(test_dir, 'weights_copy.hdf5')
-    deepspeech.save(weights_path)
-    distributed_weights = deepspeech.compiled_model.get_weights()
-    model_checkpoint = deepspeech.callbacks[1]
-    model_checkpoint.best_result = 0
-    model_checkpoint.best_weights_path = weights_path
-
-    history = deepspeech.fit(train_generator=generator, dev_generator=generator, epochs=1, shuffle=False)
-    assert type(history) == History
-
-    # Test the returned model has `test_weights`
-    deepspeech_weights = deepspeech.model.get_weights()
-    new_deepspeech = DeepSpeech.construct(config_path, alphabet_path)
-    new_deepspeech.load(model_checkpoint.best_weights_path)
-    new_deepspeech_weights = new_deepspeech.model.get_weights()
-    assert is_same(deepspeech_weights, new_deepspeech_weights)
-
-    # Test that distributed model appropriate update weights
-    new_distributed_weights = deepspeech.compiled_model.get_weights()
-    assert is_same(distributed_weights, new_distributed_weights)
-    shutil.rmtree('tests/checkpoints')
-    os.remove('tests/weights_copy.hdf5')
-
-
 def test_predict():
     # Load pretrained model and predict
     pass
@@ -99,7 +69,5 @@ def test_decode():
     pass
 
 
-def test_call(deepspeech: DeepSpeech, audio_file_paths: List[str]):
-    # sentences = deepspeech(audio_file_paths)
-    # assert len(sentences) == 2
+def test_call():
     pass
