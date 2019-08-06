@@ -8,6 +8,7 @@ features_extractor:
 model:
   name: deepspeech-custom
   input_dim: 80
+  random_state: 1
   layers:
     - constructor: expand_dims
       axis: -1

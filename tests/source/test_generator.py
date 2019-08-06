@@ -1,7 +1,7 @@
 from copy import deepcopy as copy
 
 from generator import DistributedDataGenerator
-from source.deepspeech import DataGenerator
+from source.generator import DataGenerator
 from source.utils import chdir
 
 chdir(to='ROOT')

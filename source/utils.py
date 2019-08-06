@@ -2,9 +2,7 @@ import os
 import logging
 from logging import Logger
 from typing import Callable, Any
-import h5py
 import dill
-from keras import Model
 
 
 def save(data: Any, file_name: str):

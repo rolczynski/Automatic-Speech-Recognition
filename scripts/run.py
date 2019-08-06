@@ -1,12 +1,13 @@
 import os
 import argparse
+from typing import Tuple
 
 from source.generator import DataGenerator, DistributedDataGenerator
 from source.deepspeech import DeepSpeech
 from source.utils import chdir, create_logger
 
 
-def parse_arguments():
+def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_dir', required=True, help='DeepSpeech model directory')
     parser.add_argument('--train', required=True, help='Train source (csv/hdf5 file)')
@@ -24,11 +25,10 @@ def parse_arguments():
     parser.add_argument('--mask_mt', type=int)
     parser.add_argument('--mask_ratio_t', type=float)
     parser.add_argument('--log_level', type=int, default=20, help='Log level')
-    args = parser.parse_args()
-    return args
+    return parser
 
 
-def create_generators(deepspeech: DeepSpeech, args):
+def create_generators(deepspeech: DeepSpeech, args) -> Tuple[DataGenerator, DataGenerator]:
     train_gen_params = dict(
         alphabet=deepspeech.alphabet,
         features_extractor=deepspeech.features_extractor,
@@ -55,10 +55,15 @@ def create_generators(deepspeech: DeepSpeech, args):
     return train_generator, dev_generator
 
 
+def setup_deepspeech(config_path: str, alphabet_path: str, pretrained_weights: str = '') -> DeepSpeech:
+    deepspeech = DeepSpeech.construct(config_path, alphabet_path)
+    if pretrained_weights:
+        deepspeech.load(pretrained_weights)
+    return deepspeech
+
+
 def main(args):
-    deepspeech = DeepSpeech.construct(config_path=CONFIG_PATH, alphabet_path=ALPHABET_PATH)
-    if args.pretrained_weights:
-        deepspeech.load(args.pretrained_weights)
+    deepspeech = setup_deepspeech(CONFIG_PATH, ALPHABET_PATH, pretrained_weights=args.pretrained_weights)
     train_generator, dev_generator = create_generators(deepspeech, args)
     deepspeech.fit(train_generator, dev_generator, epochs=args.epochs, shuffle=False)
     deepspeech.save(WEIGHTS_PATH)
@@ -66,8 +71,9 @@ def main(args):
 
 if __name__ == "__main__":
     chdir(to='ROOT')
-    ARGUMENTS = parse_arguments()
+    parser = create_parser()
 
+    ARGUMENTS = parser.parse_args()
     LOG_PATH = os.path.join(ARGUMENTS.model_dir, 'training.log')
     CONFIG_PATH = os.path.join(ARGUMENTS.model_dir, 'configuration.yaml')
     ALPHABET_PATH = os.path.join(ARGUMENTS.model_dir, 'alphabet.txt')
