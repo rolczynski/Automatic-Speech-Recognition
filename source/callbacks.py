@@ -46,12 +46,14 @@ class ResultKeeper(Callback):
 class CustomModelCheckpoint(Callback):
     """ Save model architecture and weights for the single or multi-gpu model. """
 
-    def __init__(self, log_dir):
-        """ Create directory where the files are stored if needed """
+    def __init__(self, template_model, log_dir):
+        """ The template model shares the same weights, but it is not distributed
+        along different devices (GPU's). It does matter for parallel models. """
         super().__init__()
         self.log_dir = log_dir
         self.best_result = np.inf
         self.best_weights_path = None
+        self.template_model = template_model
 
     def _create_log_directory(self, _):
         """ Create the directory where the checkpoints are saved. """
@@ -65,7 +67,7 @@ class CustomModelCheckpoint(Callback):
         val_loss = logs.get('val_loss')
         name = f'weights.{epoch + 1:02d}-{val_loss:.2f}.hdf5'
         file_path = os.path.join(self.log_dir, name)
-        self.model.template_model.save(file_path, overwrite=True)
+        self.template_model.save(file_path, overwrite=True)
         if val_loss < self.best_result:
             self.best_result = val_loss
             self.best_weights_path = file_path

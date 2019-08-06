@@ -25,14 +25,17 @@ def test_trainable():
 
     assert all(not extended_model.get_layer(name).trainable for name in ['base_1', 'base_2', 'base_3'])
     assert all(extended_model.get_layer(name).trainable for name in ['extension_1', 'extension_2'])
-    assert all(is_same(base_model.get_layer(name).get_weights(), extended_model.get_layer(name).get_weights())
+    assert all(not is_same(base_model.get_layer(name).get_weights(), extended_model.get_layer(name).get_weights())
                for name in ['base_1', 'base_2', 'base_3'])
 
     loss = DeepSpeech.get_loss()
     optimizer = DeepSpeech.get_optimizer(**extended_configuration.optimizer)
     parallel_model = DeepSpeech.distribute_model(extended_model, gpus)
     DeepSpeech.compile_model(parallel_model, optimizer, loss)
-    parallel_model.load_weights(fname, by_name=True)
+    extended_model.load_weights(fname, by_name=True)
+
+    assert all(is_same(base_model.get_layer(name).get_weights(), extended_model.get_layer(name).get_weights())
+               for name in ['base_1', 'base_2', 'base_3'])
 
     for i in range(10):                                                            # Dummy training (10 epochs / 10 batch_size)
         X = np.random.rand(10, 100, 80)

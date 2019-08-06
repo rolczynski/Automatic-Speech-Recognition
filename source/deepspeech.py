@@ -61,7 +61,7 @@ class DeepSpeech:
         alphabet = cls.get_alphabet(alphabet_path)
         decoder = cls.get_decoder(alphabet=alphabet, model=model, **config.decoder)
         features_extractor = cls.get_features_extractor(**config.features_extractor)
-        callbacks = cls.get_callbacks(home_dir=model_dir, configurations=config.callbacks)
+        callbacks = cls.get_callbacks(home_dir=model_dir, configurations=config.callbacks, model=model)
         return cls(model, alphabet, decoder, features_extractor, callbacks, gpus, parallel_model)
 
     def __call__(self, files: List[str]) -> List[str]:
@@ -107,11 +107,9 @@ class DeepSpeech:
 
     @staticmethod
     def distribute_model(model: Model, gpus: List[str]) -> Model:
-        """ The template model shares the same weights, but it is not distributed
-        along different devices (GPU's). It is useful e.g. for callbacks. """
+        """  """
         try:
             parallel_model = multi_gpu_model(model, len(gpus))
-            parallel_model.template_model = model
             logger.info("Training using multiple GPUs..")
         except ValueError:
             parallel_model = model
@@ -182,7 +180,7 @@ class DeepSpeech:
         raise ValueError('Wrong decoder name')
 
     @staticmethod
-    def get_callbacks(home_dir: str, configurations: list) -> List[Callback]:
+    def get_callbacks(home_dir: str, configurations: list, model: Model) -> List[Callback]:
         """ Define callbacks to get a view on internal states during training. """
         callbacks = []
         for configuration in configurations:
@@ -208,7 +206,7 @@ class DeepSpeech:
 
             elif name == 'CustomModelCheckpoint':
                 log_dir = os.path.join(home_dir, configuration.pop('dir_name'))
-                callbacks.append(CustomModelCheckpoint(log_dir))
+                callbacks.append(CustomModelCheckpoint(log_dir, model))
 
             elif name == 'CustomTensorBoard':
                 log_dir = os.path.join(home_dir, configuration.pop('dir_name'))

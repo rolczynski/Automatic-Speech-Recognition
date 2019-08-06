@@ -31,7 +31,8 @@ def test_get_decoder(config: Configuration, alphabet: Alphabet):
 
 
 def test_get_callbacks(test_dir: str, config: Configuration):
-    callbacks = DeepSpeech.get_callbacks(home_dir=test_dir, configurations=config.callbacks)
+    model = DeepSpeech.get_model(**config.model, is_gpu=False)
+    callbacks = DeepSpeech.get_callbacks(home_dir=test_dir, configurations=config.callbacks, model=model)
     assert len(callbacks) == 2
 
 
