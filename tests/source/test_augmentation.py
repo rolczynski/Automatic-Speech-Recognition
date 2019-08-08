@@ -7,11 +7,11 @@ from source.audio import FeaturesExtractor
 import augmentation
 from source.utils import chdir
 chdir(to='ROOT')
-is_silent = True
+dubbing = False
 
 
-def plot(features):
-    if not is_silent:
+def plot(features, is_silent=False):
+    if dubbing:
         fix, ax = plt.subplots(figsize=(15, 5))
         ax.imshow(features.T)
         plt.show()
@@ -32,18 +32,9 @@ def features(audio_file_paths: List[str]):
 
 
 def test_mask_features(features: np.ndarray):
-    features = features[:500]
-    masked = augmentation.mask_features(np.copy(features), F=20, mf=2, T=10, ratio_t=0.1)
+    masked = augmentation.mask_features(np.copy(features), F=20, mf=2)
     plot(masked)
-    masked = augmentation.mask_features(np.copy(features), F=20, mf=2, T=20, ratio_t=0.1)
-    plot(masked)
-    masked = augmentation.mask_features(np.copy(features), F=20, mf=2, T=10, ratio_t=0.2)
-    plot(masked)
-    masked = augmentation.mask_features(np.copy(features), F=20, mf=2, T=20, ratio_t=0.2)
-    plot(masked)
-    masked = augmentation.mask_features(np.copy(features), F=20, mf=2, T=10, ratio_t=0.3)
-    plot(masked)
-    masked = augmentation.mask_features(np.copy(features), F=20, mf=2, T=20, ratio_t=0.3)
+    masked = augmentation.mask_features(np.copy(features), T=40, ratio_t=0.3)
     plot(masked)
 
 
