@@ -46,7 +46,7 @@ def test_compile_model(config: Configuration):
 
 def test_get_features(deepspeech: DeepSpeech, audio_file_paths: List[str]):
     features = deepspeech.get_features(audio_file_paths)
-    assert features.shape == (4, 1477, 80)
+    assert features.shape == (4, 299, 80)
 
 
 def test_get_labels_and_get_transcripts(deepspeech: DeepSpeech):

@@ -7,12 +7,14 @@ from source.audio import FeaturesExtractor
 import augmentation
 from source.utils import chdir
 chdir(to='ROOT')
+is_silent = True
 
 
 def plot(features):
-    fix, ax = plt.subplots(figsize=(15, 5))
-    ax.imshow(features.T)
-    plt.show()
+    if not is_silent:
+        fix, ax = plt.subplots(figsize=(15, 5))
+        ax.imshow(features.T)
+        plt.show()
 
 
 @pytest.fixture

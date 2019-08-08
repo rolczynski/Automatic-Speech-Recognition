@@ -30,7 +30,7 @@ def test_get_activations_function(model: Model, batch: Tuple[np.ndarray, np.ndar
     assert activations[1].shape == (batch, time+2*7, features, 1)
     assert activations[2].shape == (batch, time, 1, 64)
     assert all(activation.shape == (batch, time, 64) for activation in activations[3:])
-    assert y_hat.shape == (2, 1477, 36)
+    assert y_hat.shape == (2, 299, 36)
 
 
 @pytest.fixture
@@ -73,7 +73,7 @@ def test_save_in(store_path: str, layer_outputs: List[np.ndarray], metrics: Iter
     with h5py.File(store_path, mode='r') as store:
         output_index = 1
         sample_X = store[f'outputs/{output_index}/{sample_id}']
-        assert sample_X.shape == (1477, 80, 1), 'Input layer and one additional dim'
+        assert sample_X.shape == (299, 80, 1), 'Input layer and one additional dim'
 
 
 def test_evaluate(deepspeech: DeepSpeech, generator: Iterable, store_path: str) -> pd.DataFrame:
