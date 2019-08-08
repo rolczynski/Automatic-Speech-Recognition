@@ -1,17 +1,18 @@
 from typing import List
-
 import pytest
 import numpy as np
 from matplotlib import pyplot as plt
-from source.audio import FeaturesExtractor
 import augmentation
+from source.audio import FeaturesExtractor
 from source.utils import chdir
 chdir(to='ROOT')
-dubbing = False
+debugging = False
+# debugging = True
+np.random.seed(123)
 
 
-def plot(features, is_silent=False):
-    if dubbing:
+def plot(features):
+    if debugging:
         fix, ax = plt.subplots(figsize=(15, 5))
         ax.imshow(features.T)
         plt.show()
@@ -31,17 +32,19 @@ def features(audio_file_paths: List[str]):
     return (feat-feat.mean(axis=0)) / feat.std(axis=0)
 
 
+def test_mask_time_stripes(features: np.ndarray):
+    time, channels = features.shape
+    means = features.mean(axis=0)
+    masked = augmentation.mask_time_stripes(np.copy(features), means, time, T_range=[5, 10], ratio=0.3, space=5)
+    plot(masked)
+    ratio = sum(np.array_equal(masked[t, :], means) for t in range(time)) / time
+    assert np.isclose(ratio, 0.3, atol=0.01)
+    masked = augmentation.mask_time_stripes(np.copy(features), means, time, T_range=[5, 50], ratio=0.5, space=150)     # Avoid infinite loop
+    plot(masked)
+
+
 def test_mask_features(features: np.ndarray):
     masked = augmentation.mask_features(np.copy(features), F=20, mf=2)
     plot(masked)
-    masked = augmentation.mask_features(np.copy(features), T=40, ratio_t=0.3)
+    masked = augmentation.mask_features(np.copy(features), Tmax=40, ratio_t=0.3)
     plot(masked)
-
-
-def test_mask_frequencies(features: np.ndarray):
-    features = features[: 300]        # Trim time dimension
-    time, channels = features.shape
-    augmentation.mask_frequencies(features, channels, F=20, mf=2)
-    plot(features)
-    augmentation.mask_time(features, time, T=20, mt=10)
-    plot(features)

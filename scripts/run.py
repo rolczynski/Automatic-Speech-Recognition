@@ -21,7 +21,8 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument('--mask', dest='mask', action='store_true', help='Mask features during training')
     parser.add_argument('--mask_F', type=int)
     parser.add_argument('--mask_mf', type=int)
-    parser.add_argument('--mask_T', type=int)
+    parser.add_argument('--mask_Tmin', type=int)
+    parser.add_argument('--mask_Tmax', type=int)
     parser.add_argument('--mask_mt', type=int)
     parser.add_argument('--mask_ratio_t', type=float)
     parser.add_argument('--log_level', type=int, default=20, help='Log level')
@@ -35,8 +36,8 @@ def create_generators(deepspeech: DeepSpeech, args) -> Tuple[DataGenerator, Data
         batch_size=args.batch_size,
         shuffle_after_epoch=args.shuffle_after_epoch,
         mask=args.mask,
-        mask_params=dict(F=args.mask_F, mf=args.mask_mf, T=args.mask_T,
-                         mt=args.mask_mt, ratio_t=args.mask_ratio_t)
+        mask_params=dict(F=args.mask_F, mf=args.mask_mf, Tmin=args.mask_Tmin,
+                         Tmax=args.mask_Tmax, mt=args.mask_mt, ratio_t=args.mask_ratio_t)
     )
     if args.source_distributed:
         generator_constructor = getattr(DistributedDataGenerator, args.source)

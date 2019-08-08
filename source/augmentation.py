@@ -1,44 +1,72 @@
+import logging
+from typing import Tuple
+
 import numpy as np
+logger = logging.getLogger('deepspeech')
 
 
-def mask_features(features, F: int = None, mf: int = None, T: int = None,
+def mask_features(features, F: int = None, mf: int = None, Tmin: int = 0, Tmax: int = None,
                   mt: int = None, ratio_t: float = None):
     """ SpecAugment: A Simple Data Augmentation Method. """
     time, channels = features.shape
+    means = features.mean(axis=0)       # The mean should be zero if features are normalized
     if F and mf:
-        features = mask_frequencies(features, channels, F, mf)
-    if T and mt:
-        features = mask_time(features, time, T, mt)
-    elif T and ratio_t:      # Time dimension is chainging so ratio is more appropraite
-        features = mask_time_ratio(features, time, T, ratio_t)
+        features = mask_frequencies(features, means, channels, F, mf)
+    if Tmax and mt:
+        features = mask_time_raw(features, means, time, [Tmin, Tmax], mt)
+    elif Tmax and ratio_t:                 # Time dimension is chainging so ratio is more appropraite
+        features = mask_time_ratio(features, means, time, [Tmin, Tmax], ratio_t)
     return features
 
 
-def mask_frequencies(features, channels: int, F: int, mf: int):
-    means = features.mean(axis=0)
+def mask_frequencies(features, means: np.ndarray, channels: int, F: int, mf: int):
     for i in range(mf):
         f = np.random.random_integers(low=0, high=F)
         f0 = np.random.random_integers(low=0, high=channels-F)
-        features[:, f0:f0+f] = means[f0:f0+f]   # should be zeros if normalized
+        features[:, f0:f0+f] = means[f0:f0+f]
     return features
 
 
-def mask_time(features, time: int, T: int, mt: int):
-    means = features.mean(axis=0)
+def mask_time_raw(features, means: np.ndarray, time: int, T_range: Tuple[int, int], mt: int):
+    Tmin, Tmax = T_range
     for i in range(mt):
-        t = np.random.random_integers(low=0, high=T)
-        t0 = np.random.random_integers(low=0, high=time-T)
-        features[t0:t0+t, :] = means            # should be zeros if normalized
+        t = np.random.random_integers(low=Tmin, high=Tmax)
+        t0 = np.random.random_integers(low=0, high=time-Tmax)
+        features[t0:t0+t, :] = means
     return features
 
 
-def mask_time_ratio(features, time: int, T: int, ratio_t: float):
+def mask_time_ratio(features, means: np.ndarray, time: int, T_range: Tuple[int, int], ratio: float):
     """ Mask overlap each other - samples differ of difficulty. """
-    means = features.mean(axis=0)
-    to_erase = time * ratio_t
-    while to_erase > T/2:                       # larger than mean value
-        t = np.random.random_integers(low=0, high=T)
-        t0 = np.random.random_integers(low=0, high=time-T)
-        features[t0:t0+t, :] = means            # should be zeros if normalized
+    to_erase = time * ratio
+    Tmin, Tmax = T_range
+    while to_erase > 0:
+        t = np.random.random_integers(low=Tmin, high=Tmax)
+        t0 = np.random.random_integers(low=0, high=time-Tmax)
+        features[t0:t0+t, :] = means
         to_erase -= t
+    return features
+
+
+def mask_time_stripes(features, means: np.ndarray, time: int, T_range: Tuple[int, int], ratio: float,
+                      space: int, max_tries: int = 10000):
+    booked, masked = np.zeros(time, dtype=bool), 0
+    for i in range(max_tries):                                  # Avoid infinite loops (big space value)
+        Tmin, Tmax = T_range
+        t = np.random.random_integers(low=Tmin, high=Tmax)
+        x = np.random.random_integers(low=0, high=time-Tmax)    # This is a start point for masking
+
+        left, right = max(x-space, 0), min(x+t+space, time-1)   # We operate on indices
+        if booked[left] or booked[right]:
+            continue
+
+        features[x:x+t, :] = means
+        booked[left:right] = True
+        masked += t
+
+        is_fully_masked = masked >= time*ratio
+        if is_fully_masked:
+            break
+    else:
+        logging.warn(f'The partial masked achieved ({masked/time*ratio:.2f})')
     return features

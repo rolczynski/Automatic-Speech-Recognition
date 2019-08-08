@@ -29,7 +29,8 @@ def parse_arguments():
     parser.add_argument('--mask', dest='mask', action='store_true', help='Mask features during training')
     parser.add_argument('--mask_F', type=int)
     parser.add_argument('--mask_mf', type=int)
-    parser.add_argument('--mask_T', type=int)
+    parser.add_argument('--mask_Tmin', type=int)
+    parser.add_argument('--mask_Tmax', type=int)
     parser.add_argument('--mask_mt', type=int)
     parser.add_argument('--mask_ratio_t', type=float)
     args = parser.parse_args()
@@ -90,8 +91,8 @@ def evaluate(deepspeech: DeepSpeech, generator: Iterable, save_activations: bool
     return metrics
 
 
-def main(model_dir: str, store_path: str, features_store_path: str, batch_size: int, save_activations: bool,
-         mask: bool, mask_F: int, mask_mf: int, mask_T: int, mask_mt: int, mask_ratio_t: float):
+def main(model_dir: str, store_path: str, features_store_path: str, batch_size: int,
+         save_activations: bool, mask: bool, args):
     """ Evaluate model using prepared features. """
     deepspeech = load(model_dir)
     generator = DataGenerator.from_prepared_features(
@@ -100,8 +101,8 @@ def main(model_dir: str, store_path: str, features_store_path: str, batch_size: 
         features_extractor=deepspeech.features_extractor,
         batch_size=batch_size,
         mask=mask,
-        mask_params=dict(F=mask_F, mf=mask_mf, T=mask_T,
-                         mt=mask_mt, ratio_t=mask_ratio_t)
+        mask_params=dict(F=args.mask_F, mf=args.mask_mf, Tmin=args.mask_Tmin,
+                         Tmax=args.mask_Tmax, mt=args.mask_mt, ratio_t=args.mask_ratio_t)
     )
     units = calculate_units(deepspeech.model)
     logger.info(f'Model contains: {units//1e6:.0f}M units ({units})')
@@ -125,9 +126,5 @@ if __name__ == '__main__':
         batch_size=ARGUMENTS.batch_size,
         save_activations=ARGUMENTS.save_activations,
         mask=ARGUMENTS.mask,
-        mask_F=ARGUMENTS.mask_F,
-        mask_mf=ARGUMENTS.mask_mf,
-        mask_T=ARGUMENTS.mask_T,
-        mask_mt=ARGUMENTS.mask_mt,
-        mask_ratio_t=ARGUMENTS.mask_ratio_t
+        args=ARGUMENTS
     )
