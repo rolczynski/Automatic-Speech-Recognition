@@ -32,6 +32,7 @@ def parse_arguments():
     parser.add_argument('--mask_Tmin', type=int)
     parser.add_argument('--mask_Tmax', type=int)
     parser.add_argument('--mask_mt', type=int)
+    parser.add_argument('--mask_Tspace', type=int)
     parser.add_argument('--mask_ratio_t', type=float)
     args = parser.parse_args()
     return args
@@ -101,8 +102,8 @@ def main(model_dir: str, store_path: str, features_store_path: str, batch_size: 
         features_extractor=deepspeech.features_extractor,
         batch_size=batch_size,
         mask=mask,
-        mask_params=dict(F=args.mask_F, mf=args.mask_mf, Tmin=args.mask_Tmin,
-                         Tmax=args.mask_Tmax, mt=args.mask_mt, ratio_t=args.mask_ratio_t)
+        mask_params=dict(F=args.mask_F, mf=args.mask_mf, Tmin=args.mask_Tmin, Tmax=args.mask_Tmax,
+                         mt=args.mask_mt, ratio_t=args.mask_ratio_t, Tspace=args.mask_Tspace)
     )
     units = calculate_units(deepspeech.model)
     logger.info(f'Model contains: {units//1e6:.0f}M units ({units})')

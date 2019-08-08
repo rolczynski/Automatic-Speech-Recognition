@@ -24,6 +24,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument('--mask_Tmin', type=int)
     parser.add_argument('--mask_Tmax', type=int)
     parser.add_argument('--mask_mt', type=int)
+    parser.add_argument('--mask_Tspace', type=int)
     parser.add_argument('--mask_ratio_t', type=float)
     parser.add_argument('--log_level', type=int, default=20, help='Log level')
     return parser
@@ -36,8 +37,8 @@ def create_generators(deepspeech: DeepSpeech, args) -> Tuple[DataGenerator, Data
         batch_size=args.batch_size,
         shuffle_after_epoch=args.shuffle_after_epoch,
         mask=args.mask,
-        mask_params=dict(F=args.mask_F, mf=args.mask_mf, Tmin=args.mask_Tmin,
-                         Tmax=args.mask_Tmax, mt=args.mask_mt, ratio_t=args.mask_ratio_t)
+        mask_params=dict(F=args.mask_F, mf=args.mask_mf, Tmin=args.mask_Tmin, Tmax=args.mask_Tmax,
+                         mt=args.mask_mt, ratio_t=args.mask_ratio_t, Tspace=args.mask_Tspace)
     )
     if args.source_distributed:
         generator_constructor = getattr(DistributedDataGenerator, args.source)

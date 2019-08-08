@@ -6,16 +6,16 @@ logger = logging.getLogger('deepspeech')
 
 
 def mask_features(features, F: int = None, mf: int = None, Tmin: int = 0, Tmax: int = None,
-                  mt: int = None, ratio_t: float = None):
+                  mt: int = None, ratio_t: float = None, Tspace: int = 5):
     """ SpecAugment: A Simple Data Augmentation Method. """
     time, channels = features.shape
     means = features.mean(axis=0)       # The mean should be zero if features are normalized
     if F and mf:
         features = mask_frequencies(features, means, channels, F, mf)
     if Tmax and mt:
-        features = mask_time_raw(features, means, time, [Tmin, Tmax], mt)
+        features = mask_time(features, means, time, [Tmin, Tmax], mt)
     elif Tmax and ratio_t:                 # Time dimension is chainging so ratio is more appropraite
-        features = mask_time_ratio(features, means, time, [Tmin, Tmax], ratio_t)
+        features = mask_time_stripes(features, means, time, [Tmin, Tmax], ratio_t, Tspace)
     return features
 
 
@@ -27,24 +27,12 @@ def mask_frequencies(features, means: np.ndarray, channels: int, F: int, mf: int
     return features
 
 
-def mask_time_raw(features, means: np.ndarray, time: int, T_range: Tuple[int, int], mt: int):
+def mask_time(features, means: np.ndarray, time: int, T_range: Tuple[int, int], mt: int):
     Tmin, Tmax = T_range
     for i in range(mt):
         t = np.random.random_integers(low=Tmin, high=Tmax)
         t0 = np.random.random_integers(low=0, high=time-Tmax)
         features[t0:t0+t, :] = means
-    return features
-
-
-def mask_time_ratio(features, means: np.ndarray, time: int, T_range: Tuple[int, int], ratio: float):
-    """ Mask overlap each other - samples differ of difficulty. """
-    to_erase = time * ratio
-    Tmin, Tmax = T_range
-    while to_erase > 0:
-        t = np.random.random_integers(low=Tmin, high=Tmax)
-        t0 = np.random.random_integers(low=0, high=time-Tmax)
-        features[t0:t0+t, :] = means
-        to_erase -= t
     return features
 
 
