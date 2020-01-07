@@ -23,6 +23,7 @@ The evaluation results of the English benchmark LibriSpeech dev-clean are in the
 To reference, the DeepSpeech (Mozilla) achieves around 7.5% WER, whereas the state-of-the-art (RWTH Aachen University) equals 2.3% WER
 (recent evaluation results can be found [here](https://paperswithcode.com/sota/speech-recognition-on-librispeech-test-clean)).
 Both of them, use the external language model to boost results.
+By comparison, _humans_ achieve 5.83% WER [here](https://arxiv.org/abs/1512.02595v1) (LibriSpeech dev-clean)
 
 | Model Name    | Decoder | WER-dev |
 | :---          |  :---:  |  :---:  |
@@ -111,3 +112,5 @@ The fundamental repositories:
 - Sean Naren - [Speech Recognition using DeepSpeech2](https://github.com/SeanNaren/deepspeech.pytorch)
 
 Moreover, you can explore the GitHub using key phrases like `ASR`, `DeepSpeech`, or `Speech-To-Text`.
+The list [wer_are_we](https://github.com/syhw/wer_are_we), an attempt at tracking states of the art,
+can be helpful too.
