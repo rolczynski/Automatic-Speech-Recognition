@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 import automatic_speech_recognition as asr
 
 dataset = asr.dataset.Audio.from_csv('train.csv', batch_size=32)
@@ -16,7 +17,7 @@ model = asr.model.get_deepspeech2(
     rnn_units=800,
     is_mixed_precision=True
 )
-optimizer = asr.optimizer.Adam(
+optimizer = tf.optimizer.Adam(
     lr=1e-4,
     beta_1=0.9,
     beta_2=0.999,
