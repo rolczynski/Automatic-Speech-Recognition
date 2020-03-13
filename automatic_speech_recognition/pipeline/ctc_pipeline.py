@@ -56,9 +56,8 @@ class CTCPipeline(Pipeline):
 
     def preprocess(self,
                    batch: Tuple[List[np.ndarray], List[str]],
-                   is_extracted: bool = False,
-                   augmentation: augmentation.Augmentation = None
-                   ) -> Tuple[np.ndarray, np.ndarray]:
+                   is_extracted: bool,
+                   augmentation: augmentation.Augmentation) -> Tuple[np.ndarray, np.ndarray]:
         """ Preprocess batch data to format understandable to a model. """
         data, transcripts = batch
         if is_extracted:  # then just align features
@@ -83,28 +82,30 @@ class CTCPipeline(Pipeline):
             prepared_features: bool = False,
             **kwargs) -> keras.callbacks.History:
         """ Get ready data, compile and train a model. """
-        dataset = self.wrap_preprocess(dataset)
-        dev_dataset = self.wrap_preprocess(dev_dataset)
+        dataset = self.wrap_preprocess(dataset, prepared_features, augmentation)
+        dev_dataset = self.wrap_preprocess(dataset, prepared_features, augmentation)
         if not self._model.optimizer:  # a loss function and an optimizer
             self.compile_model()  # have to be set before the training
         return self._model.fit(dataset, validation_data=dev_dataset, **kwargs)
 
     def predict(self, batch_audio: List[np.ndarray], **kwargs) -> List[str]:
         """ Get ready features, and make a prediction. """
-        features: np.ndarray = self._features_extractor(batch_audio)
+        features = self._features_extractor(batch_audio)
         batch_logits = self._model.predict(features, **kwargs)
         decoded_labels = self._decoder(batch_logits)
         predictions = self._alphabet.get_batch_transcripts(decoded_labels)
         return predictions
 
-    def wrap_preprocess(self, dataset: dataset.Dataset):
+    def wrap_preprocess(self,
+                        dataset: dataset.Dataset,
+                        is_extracted: bool,
+                        augmentation: augmentation.Augmentation):
         """ Dataset does not know the feature extraction process by design.
         The Pipeline class exclusively understand dependencies between
         components. """
         def wrapper(self_dataset, index: int):
             batch = dataset.__getitem__(index)
-            return self.preprocess(batch)
-
+            return self.preprocess(batch, is_extracted, augmentation)
         dataset.__getitem__ = wrapper
         return dataset
 

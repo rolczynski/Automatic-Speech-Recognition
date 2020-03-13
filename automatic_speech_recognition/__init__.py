@@ -11,4 +11,4 @@ from . import utils
 from .load import load
 
 # Version of the automatic-speech-recognition package
-__version__ = "1.0.2"
+__version__ = "1.0.3"
