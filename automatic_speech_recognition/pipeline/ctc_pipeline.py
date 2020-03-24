@@ -1,4 +1,5 @@
 import os
+from types import MethodType
 import logging
 from typing import List, Callable, Tuple
 import numpy as np
@@ -103,10 +104,12 @@ class CTCPipeline(Pipeline):
         """ Dataset does not know the feature extraction process by design.
         The Pipeline class exclusively understand dependencies between
         components. """
-        def wrapper(self_dataset, index: int):
-            batch = dataset.__getitem__(index)
-            return self.preprocess(batch, is_extracted, augmentation)
-        dataset.__getitem__ = wrapper
+        def preprocess(get_batch):
+            def get_prep_batch(index: int):
+                batch = get_batch(index)
+                return self.preprocess(batch, is_extracted, augmentation)
+            return get_prep_batch
+        dataset.get_batch = preprocess(dataset.get_batch)
         return dataset
 
     def save(self, directory: str):

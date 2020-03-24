@@ -8,12 +8,6 @@ from tensorflow.keras.mixed_precision import experimental as mixed_precision
 def get_deepspeech2(input_dim, output_dim,
                     is_mixed_precision=True,
                     rnn_units=800, random_state=1) -> keras.Model:
-    """
-
-    input_dim: int i wielokrotność 4
-    output_dim: licba liter w słowniku
-
-    """
     if is_mixed_precision:
         policy = mixed_precision.Policy('mixed_float16')
         mixed_precision.set_policy(policy)

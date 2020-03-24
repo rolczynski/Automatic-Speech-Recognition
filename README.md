@@ -63,9 +63,9 @@ model = asr.model.get_deepspeech2(
     input_dim=160,
     output_dim=29,
     rnn_units=800,
-    is_mixed_precision=True
+    is_mixed_precision=False
 )
-optimizer = tf.optimizer.Adam(
+optimizer = tf.optimizers.Adam(
     lr=1e-4,
     beta_1=0.9,
     beta_2=0.999,
