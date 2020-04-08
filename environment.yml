@@ -1,7 +1,7 @@
 name: Automatic-Speech-Recognition
 dependencies:
   - python=3.7.5
-  - tensorflow=2.0.0
+  - tensorflow=2.1.0
   - pandas=0.25.3
   - scipy=1.4.1
   - pytables=3.6.1
